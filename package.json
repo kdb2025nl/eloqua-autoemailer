@@ -1,0 +1,22 @@
+{
+  "name": "eloqua-automailer",
+  "version": "1.0.0",
+  "description": "Eloqua Campaign Generator - Generate multilingual email templates from any source using Gemini AI",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx http-server -p 8080 -o",
+    "dev": "npx http-server -p 8080 -o"
+  },
+  "keywords": [
+    "eloqua",
+    "email",
+    "campaign",
+    "generator",
+    "gemini",
+    "ai",
+    "multilingual"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}

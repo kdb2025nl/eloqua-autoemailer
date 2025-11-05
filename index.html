@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eloqua Campaign Generator</title>
+    <!-- Ładowanie Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Ładowanie biblioteki ikon Lucide (Poprawiony URL) -->
+    <script src="https://unpkg.com/lucide/dist/umd/lucide.js"></script>
+    <style>
+        /* Styl dla animacji ładowania */
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+        /* Ukrywanie domyślnego pola wyboru pliku */
+        input[type="file"].hidden {
+            display: none;
+        }
+        /* Proste style dla zakładek */
+        .tab-btn.active {
+            border-bottom: 2px solid #003C5C;
+            color: #003C5C;
+            background-color: #f0f5ff;
+        }
+        /* Styl dla modali */
+        #assetsModal.hidden, #emailModal.hidden, #apiKeyModal.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-800">
+
+    <!-- Nagłówek Atradius -->
+    <div class="w-full bg-[#003C5C] p-8 text-white">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <img src="https://www.atradius.group/assets/media/atradius-logo-white.svg" alt="Atradius Collections Logo" class="h-10 md:h-12">
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-bold">Eloqua Campaign Generator</h1>
+                    <p class="text-lg opacity-90">Draft multilingual email templates from any source</p>
+                </div>
+            </div>
+            <button id="apiKeyButton" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg flex items-center gap-2 text-sm transition-colors border border-white/20">
+                <i data-lucide="key" class="w-4 h-4"></i>
+                <span id="apiKeyStatus">Configure API</span>
+            </button>
+        </div>
+    </div>
+
+    <main class="max-w-7xl mx-auto p-4 md:p-8 space-y-8">
+
+        <!-- Krok 1: Źródło -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+            <h2 class="text-xl font-bold mb-4 flex items-center gap-3"><span class="bg-[#003C5C] text-white rounded-full h-8 w-8 flex items-center justify-center font-bold">1</span> Choose Your Source</h2>
+            <div class="flex flex-wrap gap-2 border-b border-gray-200 mb-4">
+                <button id="tab-url" class="tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors flex items-center gap-2 active" data-type="url">
+                    <i data-lucide="link" class="w-4 h-4"></i> URL
+                </button>
+                <button id="tab-text" class="tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors flex items-center gap-2" data-type="text">
+                    <i data-lucide="file-type" class="w-4 h-4"></i> Text
+                </button>
+                <button id="tab-file" class="tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors flex items-center gap-2" data-type="file">
+                    <i data-lucide="upload-cloud" class="w-4 h-4"></i> File
+                </button>
+            </div>
+
+            <div id="input-container">
+                <div id="input-url">
+                    <input type="url" id="sourceUrl" value="https://atradiuscollections.com/global/knowledge-and-research/reports/economic-research-economic-outlook-july-2025" placeholder="https://example.com/article" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003C5C] outline-none">
+                </div>
+                <div id="input-text" class="hidden">
+                    <textarea id="sourceText" placeholder="Paste your article or text content here..." class="w-full h-32 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003C5C] outline-none resize-y"></textarea>
+                </div>
+                <div id="input-file" class="hidden">
+                    <div class="flex items-center gap-4">
+                        <label class="cursor-pointer px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-semibold flex items-center gap-2">
+                            <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+                            <span id="file-label">Upload File</span>
+                            <input type="file" id="sourceFile" accept=".txt,.md,.text" class="hidden">
+                        </label>
+                        <p id="file-name" class="text-gray-600"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Krok 2: Wybór języka -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+            <h2 class="text-xl font-bold mb-4 flex items-center gap-3"><span class="bg-[#003C5C] text-white rounded-full h-8 w-8 flex items-center justify-center font-bold">2</span> Select Languages</h2>
+            <div id="language-selector" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
+                <!-- Języki będą wstawione przez JS -->
+            </div>
+        </div>
+
+        <!-- Krok 3: Generowanie -->
+        <div class="text-center">
+            <button id="generateButton" class="px-8 py-4 bg-[#003C5C] text-white rounded-lg font-semibold hover:bg-[#003C5C]/90 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-3 mx-auto shadow-lg transition-transform hover:scale-105 disabled:transform-none disabled:shadow-none">
+                <i data-lucide="zap" class="w-5 h-5"></i> Generate with Gemini
+            </button>
+            <button id="cancelButton" class="hidden px-8 py-4 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 flex items-center gap-3 mx-auto shadow-lg transition-transform hover:scale-105">
+                <i data-lucide="x" class="w-5 h-5"></i> Cancel Generation
+            </button>
+        </div>
+
+        <!-- Krok 4: Wyniki -->
+        <div id="results-container" class="space-y-6">
+            <!-- Wyniki będą wstawione przez JS -->
+        </div>
+
+    </main>
+
+    <!-- Modal dla wygenerowanych zasobów -->
+    <div id="assetsModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center p-4 border-b sticky top-0 bg-white z-10">
+                <h3 class="text-lg font-bold flex items-center gap-2"><i data-lucide="package-plus" class="w-5 h-5 text-blue-600"></i> Generated Campaign Assets</h3>
+                <button id="modalCloseButton" class="p-1 rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-700">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div id="modalContent" class="p-6 space-y-4">
+                <!-- Dynamic content goes here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ✨ NOWA FUNKCJA: Modal dla E-maila -->
+    <div id="emailModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center p-4 border-b sticky top-0 bg-white z-10">
+                <h3 class="text-lg font-bold flex items-center gap-2"><i data-lucide="mail" class="w-5 h-5 text-blue-600"></i> Email Campaign Results</h3>
+                <button id="emailModalCloseButton" class="p-1 rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-700">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="p-6 flex-grow overflow-y-auto">
+                <p class="text-sm text-gray-600 mb-2">Copy the content below and paste it into your email client.</p>
+                <textarea id="emailModalContent" readonly class="w-full h-64 md:h-96 p-3 border border-gray-200 rounded-lg bg-gray-50 font-mono text-xs"></textarea>
+            </div>
+            <div class="p-4 bg-gray-50 border-t rounded-b-2xl">
+                <button id="emailModalCopyButton" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 flex items-center justify-center gap-2 text-sm">
+                    <i data-lucide="copy" class="w-4 h-4"></i> Copy All to Clipboard
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal konfiguracji API Key -->
+    <div id="apiKeyModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md">
+            <div class="flex justify-between items-center p-4 border-b">
+                <h3 class="text-lg font-bold flex items-center gap-2"><i data-lucide="key" class="w-5 h-5 text-blue-600"></i> Configure API Key</h3>
+                <button id="apiKeyModalCloseButton" class="p-1 rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-700">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <p class="text-sm text-gray-600 mb-4">Enter your Google Gemini API key to enable content generation. Your key is stored locally in your browser.</p>
+                    <div class="space-y-2">
+                        <label class="text-sm font-semibold text-gray-700">API Key:</label>
+                        <input type="password" id="apiKeyInput" placeholder="Enter your Gemini API key..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003C5C] outline-none">
+                        <p class="text-xs text-gray-500">Get your key from: <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-blue-600 hover:underline">Google AI Studio</a></p>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button id="apiKeySaveButton" class="flex-1 px-4 py-2 bg-[#003C5C] text-white rounded-lg font-semibold hover:bg-[#003C5C]/90 flex items-center justify-center gap-2">
+                        <i data-lucide="save" class="w-4 h-4"></i> Save Key
+                    </button>
+                    <button id="apiKeyClearButton" class="px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 flex items-center justify-center gap-2">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i> Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Globalny skrypt aplikacji -->
+    <script type="module">
+        // --- KONFIGURACJA API ---
+
+        let API_KEY = localStorage.getItem('gemini_api_key') || '';
+
+        function getApiKey() {
+            return API_KEY || '';
+        }
+
+        function setApiKey(key) {
+            API_KEY = key;
+            if (key) {
+                localStorage.setItem('gemini_api_key', key);
+            } else {
+                localStorage.removeItem('gemini_api_key');
+            }
+            updateApiKeyStatus();
+        }
+
+        function updateApiKeyStatus() {
+            const statusElement = document.getElementById('apiKeyStatus');
+            const generateButton = document.getElementById('generateButton');
+            if (API_KEY) {
+                statusElement.textContent = 'API Key Set';
+                statusElement.classList.add('text-green-300');
+            } else {
+                statusElement.textContent = 'Configure API';
+                statusElement.classList.remove('text-green-300');
+            }
+        }
+
+        // --- STAŁE I TYPY (symulowane) ---
+
+        const LANGUAGES = {
+            'EN': { name: 'English', flag: '🇬🇧' },
+            'DE': { name: 'German', flag: '🇩🇪' },
+            'NL': { name: 'Dutch', flag: '🇳🇱' },
+            'FR': { name: 'French', flag: '🇫🇷' },
+            'PL': { name: 'Polish', flag: '🇵🇱' },
+            'IT': { name: 'Italian', flag: '🇮🇹' },
+            'ES': { name: 'Spanish', flag: '🇪🇸' }
+        };
+
+        const API_CONCURRENCY_LIMIT = 3;
+
+        // --- STAN APLIKACJI ---
+
+        let state = {
+            inputType: 'url',
+            sourceUrl: 'https://atradiuscollections.com/global/knowledge-and-research/reports/economic-research-economic-outlook-july-2025',
+            sourceText: '',
+            sourceFile: null, // { name: string, content: string }
+            selectedLanguages: ['EN', 'DE', 'NL', 'FR'],
+            isProcessing: false,
+            languageStatus: null, // Record<LangCode, { status: 'idle' | 'processing' | 'success' | 'error', error?: string }>
+            generatedContent: null, // Record<LangCode, EmailContent>
+            alternativeSubjects: {}, // Record<LangCode, string[]>
+            bodyRefineLoading: null, // LangCode | null
+            subjectLineLoading: null, // LangCode | null
+            isCancelledRef: false,
+            assetGenerationLoading: null // Śledzi ładowanie zasobów
+        };
+
+        // --- REFERENCJE DO DOM ---
+
+        const dom = {
+            tabButtons: document.querySelectorAll('.tab-btn'),
+            inputContainer: document.getElementById('input-container'),
+            inputUrl: document.getElementById('input-url'),
+            inputText: document.getElementById('input-text'),
+            inputFile: document.getElementById('input-file'),
+            sourceUrlInput: document.getElementById('sourceUrl'),
+            sourceTextInput: document.getElementById('sourceText'),
+            sourceFileInput: document.getElementById('sourceFile'),
+            fileLabel: document.getElementById('file-label'),
+            fileName: document.getElementById('file-name'),
+            languageSelector: document.getElementById('language-selector'),
+            generateButton: document.getElementById('generateButton'),
+            cancelButton: document.getElementById('cancelButton'),
+            resultsContainer: document.getElementById('results-container'),
+            // Modal zasobów
+            assetsModal: document.getElementById('assetsModal'),
+            assetsModalContent: document.getElementById('modalContent'),
+            assetsModalCloseButton: document.getElementById('modalCloseButton'),
+            // ✨ NOWY DOM: Modal E-mail
+            emailModal: document.getElementById('emailModal'),
+            emailModalContent: document.getElementById('emailModalContent'),
+            emailModalCopyButton: document.getElementById('emailModalCopyButton'),
+            emailModalCloseButton: document.getElementById('emailModalCloseButton')
+        };
+
+        // --- FUNKCJE POMOCNICZE ---
+
+        const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        function extractJSON(text) {
+            if (!text) return null;
+            const startIndex = text.indexOf('{');
+            const endIndex = text.lastIndexOf('}');
+            if (startIndex === -1 || endIndex === -1 || endIndex < startIndex) return null;
+            const jsonCandidate = text.substring(startIndex, endIndex + 1);
+            try {
+                const parsed = JSON.parse(jsonCandidate);
+                if (parsed.subject && parsed.preheader && parsed.body && parsed.cta) {
+                    return {
+                        subject: parsed.subject,
+                        preheader: parsed.preheader,
+                        body: parsed.body,
+                        cta: parsed.cta,
+                        keyInsights: Array.isArray(parsed.keyInsights) ? parsed.keyInsights : [],
+                    };
+                }
+            } catch (e) {
+                console.error("JSON parsing failed:", e);
+            }
+            return null;
+        }
+
+        function safeClipboardCopy(text, onCopy) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-9999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                if (onCopy) onCopy();
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+            }
+            document.body.removeChild(textArea);
+        }
+
+        function getSourceContent() {
+            switch (state.inputType) {
+                case 'url': return state.sourceUrl;
+                case 'text': return state.sourceText;
+                case 'file': return state.sourceFile?.content || '';
+                default: return '';
+            }
+        }
+
+        function checkReadiness() {
+            const sourceContent = getSourceContent();
+            const isReady = !!sourceContent.trim() && state.selectedLanguages.length > 0;
+            dom.generateButton.disabled = !isReady || state.isProcessing;
+        }
+
+        const getBasePrompt = (languageName) => {
+            const sourceContent = getSourceContent();
+            const sourceIdentifier = state.inputType === 'url' ? `the article at ${sourceContent}` : `the following text`;
+            const sourceData = state.inputType !== 'url' ? `\n\n---SOURCE TEXT---\n${sourceContent}\n---END SOURCE TEXT---` : '';
+            return `Based on ${sourceIdentifier}, generate professional email content in ${languageName} specifically for **current clients**. Maintain a professional yet familiar and helpful tone, acknowledging the existing relationship. The goal is to provide value and strengthen our partnership.
+Please create:
+1. A compelling, client-focused subject line (max 15 words).
+2. A short, engaging preheader (max 20 words) that appears after the subject line.
+3. A professional email body (approx. 150-200 words). Structure it with an engaging opening that references our partnership, 2-3 key insights relevant to their business, and a clear call-to-action. Use '\\n' for new paragraphs to ensure proper formatting and readability.
+4. A short, actionable call-to-action text (max 5 words).
+Format the entire response as a single, clean JSON object, with no surrounding text or markdown.${sourceData}`;
+        };
+
+        // --- LOGIKA API GEMINI ---
+
+        async function callGeminiApi(prompt) {
+            const apiKey = getApiKey();
+            if (!apiKey) throw new Error("API key not configured");
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            subject: { type: "STRING" },
+                            preheader: { type: "STRING" },
+                            body: { type: "STRING" },
+                            cta: { type: "STRING" },
+                            keyInsights: { type: "ARRAY", items: { type: "STRING" } }
+                        },
+                        required: ["subject", "preheader", "body", "cta", "keyInsights"]
+                    }
+                }
+            };
+
+            let attempts = 0;
+            while (attempts < 3) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+                    const result = await response.json();
+                    const candidate = result.candidates?.[0];
+                    const contentText = candidate?.content?.parts?.[0]?.text;
+                    if (contentText) {
+                        const parsedJson = JSON.parse(contentText);
+                        return { keyInsights: [], ...parsedJson };
+                    } else {
+                        throw new Error("Invalid API response structure");
+                    }
+                } catch (error) {
+                    attempts++;
+                    console.error(`Attempt ${attempts} failed:`, error);
+                    if (attempts >= 3) throw error;
+                    await sleep(1000 * attempts);
+                }
+            }
+            throw new Error("API call failed after multiple retries.");
+        }
+
+        async function callGeminiForSubjectVariations(prompt) {
+            const apiKey = getApiKey();
+            if (!apiKey) throw new Error("API key not configured");
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: { type: "ARRAY", items: { type: "STRING" } }
+                }
+            };
+
+            let attempts = 0;
+            while (attempts < 3) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+                    const result = await response.json();
+                    const candidate = result.candidates?.[0];
+                    const contentText = candidate?.content?.parts?.[0]?.text;
+                    if (contentText) {
+                        const parsedJson = JSON.parse(contentText);
+                        return Array.isArray(parsedJson) ? parsedJson : [];
+                    } else {
+                        throw new Error("Invalid API response structure");
+                    }
+                } catch (error) {
+                    attempts++;
+                    console.error(`Attempt ${attempts} failed:`, error);
+                    if (attempts >= 3) throw error;
+                    await sleep(1000 * attempts);
+                }
+            }
+            throw new Error("API call failed after multiple retries.");
+        }
+
+        async function callGeminiForRewrite(prompt) {
+            const apiKey = getApiKey();
+            if (!apiKey) throw new Error("API key not configured");
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: { rewrittenBody: { type: "STRING" } },
+                        required: ["rewrittenBody"]
+                    }
+                }
+            };
+
+            let attempts = 0;
+            while (attempts < 3) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+                    const result = await response.json();
+                    const candidate = result.candidates?.[0];
+                    const contentText = candidate?.content?.parts?.[0]?.text;
+                    if (contentText) {
+                        const parsedJson = JSON.parse(contentText);
+                        return parsedJson.rewrittenBody || "";
+                    } else {
+                        throw new Error("Invalid API response structure");
+                    }
+                } catch (error) {
+                    attempts++;
+                    console.error(`Attempt ${attempts} failed:`, error);
+                    if (attempts >= 3) throw error;
+                    await sleep(1000 * attempts);
+                }
+            }
+            throw new Error("API call failed after multiple retries.");
+        }
+
+        async function callGeminiForAssets(prompt) {
+            const apiKey = getApiKey();
+            if (!apiKey) throw new Error("API key not configured");
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            linkedinPost: { type: "STRING" },
+                            twitterPost: { type: "STRING" },
+                            imagePrompt: { type: "STRING" },
+                            audiencePersonas: {
+                                type: "ARRAY",
+                                items: {
+                                    type: "OBJECT",
+                                    properties: {
+                                        name: { type: "STRING" },
+                                        description: { type: "STRING" }
+                                    },
+                                    required: ["name", "description"]
+                                }
+                            }
+                        },
+                        required: ["linkedinPost", "twitterPost", "imagePrompt", "audiencePersonas"]
+                    }
+                }
+            };
+
+            let attempts = 0;
+            while (attempts < 3) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+                    const result = await response.json();
+                    const candidate = result.candidates?.[0];
+                    const contentText = candidate?.content?.parts?.[0]?.text;
+                    if (contentText) {
+                        return JSON.parse(contentText);
+                    } else {
+                        throw new Error("Invalid API response structure");
+                    }
+                } catch (error) {
+                    attempts++;
+                    console.error(`Attempt ${attempts} failed:`, error);
+                    if (attempts >= 3) throw error;
+                    await sleep(1000 * attempts);
+                }
+            }
+            throw new Error("API call failed after multiple retries.");
+        }
+
+        async function callImagenApi(prompt) {
+            const apiKey = getApiKey();
+            if (!apiKey) throw new Error("API key not configured");
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
+            const payload = {
+                instances: [{ prompt: prompt }],
+                parameters: { "sampleCount": 1 }
+            };
+
+            let attempts = 0;
+            while (attempts < 3) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+                    const result = await response.json();
+                    if (result.predictions && result.predictions[0]?.bytesBase64Encoded) {
+                        return `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`;
+                    } else {
+                        throw new Error("Invalid Imagen API response structure");
+                    }
+                } catch (error) {
+                    attempts++;
+                    console.error(`Imagen Attempt ${attempts} failed:`, error);
+                    if (attempts >= 3) throw error;
+                    await sleep(1000 * attempts);
+                }
+            }
+            throw new Error("Imagen API call failed after multiple retries.");
+        }
+
+
+        // --- HANDLERY ZDARZEŃ ---
+
+        function handleTabClick(e) {
+            const btn = e.target.closest('.tab-btn');
+            if (!btn) return;
+
+            const type = btn.dataset.type;
+            state.inputType = type;
+
+            dom.tabButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            dom.inputUrl.classList.toggle('hidden', type !== 'url');
+            dom.inputText.classList.toggle('hidden', type !== 'text');
+            dom.inputFile.classList.toggle('hidden', type !== 'file');
+
+            checkReadiness();
+        }
+
+        function handleFileChange(e) {
+            const file = e.target.files?.[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    state.sourceFile = { name: file.name, content: e.target?.result };
+                    dom.fileName.textContent = file.name;
+                    dom.fileLabel.textContent = 'Change File';
+                    checkReadiness();
+                };
+                reader.readAsText(file);
+            }
+            e.target.value = ''; // Reset file input
+        }
+
+        function toggleLanguage(langCode) {
+            const index = state.selectedLanguages.indexOf(langCode);
+            if (index > -1) {
+                state.selectedLanguages.splice(index, 1);
+            } else {
+                state.selectedLanguages.push(langCode);
+            }
+            renderLanguageSelector();
+            checkReadiness();
+        }
+
+        async function handleGenerate() {
+            if (!checkReadiness() && state.isProcessing) return;
+
+            // Sprawdź czy API key jest ustawiony
+            if (!getApiKey()) {
+                showApiKeyModal();
+                return;
+            }
+
+            state.isProcessing = true;
+            state.isCancelledRef = false;
+            state.generatedContent = {};
+            state.alternativeSubjects = {};
+            updateButtons();
+
+            const initialStatus = state.selectedLanguages.reduce((acc, lang) => {
+                acc[lang] = { status: 'processing' };
+                return acc;
+            }, {});
+            state.languageStatus = initialStatus;
+
+            renderResults(); // Pokaż szkielety kart
+
+            const processLanguage = async (langCode) => {
+                if (state.isCancelledRef) return;
+                try {
+                    const prompt = getBasePrompt(LANGUAGES[langCode].name);
+                    const content = await callGeminiApi(prompt);
+                    if (state.isCancelledRef) return;
+
+                    state.generatedContent[langCode] = content;
+                    state.languageStatus[langCode] = { status: 'success' };
+                    renderCardContent(langCode); // Zaktualizuj konkretną kartę
+                } catch (error) {
+                    console.error(`Error generating for ${langCode}:`, error);
+                    if (state.isCancelledRef) return;
+                    state.languageStatus[langCode] = { status: 'error', error: error.message };
+                    renderCardContent(langCode); // Pokaż błąd na karcie
+                }
+            };
+
+            const tasks = state.selectedLanguages.map(langCode => () => processLanguage(langCode));
+            const activeTasks = [];
+            for (const task of tasks) {
+                if(state.isCancelledRef) break;
+                const promise = task();
+                activeTasks.push(promise);
+                if (activeTasks.length >= API_CONCURRENCY_LIMIT) {
+                    await Promise.race(activeTasks);
+                    activeTasks.splice(activeTasks.findIndex(p => p === Promise.race(activeTasks)), 1);
+                }
+            }
+            await Promise.all(activeTasks);
+
+            // ✨ POPRAWKA: Ponownie renderuj całą sekcję wyników, aby poprawnie zaktualizować status przycisków eksportu
+            renderResults();
+
+            state.isProcessing = false;
+            state.isCancelledRef = false;
+            updateButtons();
+        }
+
+        function handleCancel() {
+            state.isCancelledRef = true;
+            state.isProcessing = false;
+            if (state.languageStatus) {
+                Object.keys(state.languageStatus).forEach(key => {
+                    if (state.languageStatus[key].status === 'processing') {
+                        state.languageStatus[key] = { status: 'idle' };
+                    }
+                });
+            }
+            renderResults();
+            updateButtons();
+        }
+
+        function handleManualPaste(langCode, text) {
+            const json = extractJSON(text);
+            if (json) {
+                state.generatedContent[langCode] = json;
+                state.languageStatus[langCode] = { status: 'success' };
+                renderCardContent(langCode);
+            } else {
+                state.languageStatus[langCode] = { status: 'error', error: 'Invalid JSON' };
+                renderCardContent(langCode); // Pokaż błąd (np. czerwona ramka)
+                const textarea = document.querySelector(`#card-${langCode} textarea`);
+                if(textarea) {
+                    textarea.classList.add('border-red-400', 'focus:ring-red-400');
+                    textarea.classList.remove('border-gray-300', 'focus:ring-[#003C5C]');
+                }
+            }
+        }
+
+        async function handleGenerateSubjectVariations(langCode) {
+            const content = state.generatedContent?.[langCode];
+            if (!content) return;
+
+            state.subjectLineLoading = langCode;
+            renderCardContent(langCode); // Zaktualizuj UI, aby pokazać ładowanie
+
+            const prompt = `Based on the following email subject and body, generate 3 compelling alternative subject lines for A/B testing.
+Maintain a professional and client-focused tone.
+Respond as a simple JSON array of strings. e.g., ["Subject variation 1", "Subject variation 2", "Subject variation 3"]
+
+Original Subject: ${content.subject}
+Email Body: ${content.body}`;
+
+            try {
+                const variations = await callGeminiForSubjectVariations(prompt);
+                state.alternativeSubjects[langCode] = variations;
+            } catch (error) {
+                console.error("Failed to generate subject variations:", error);
+            } finally {
+                state.subjectLineLoading = null;
+                renderCardContent(langCode); // Zrenderuj nowe wariacje
+            }
+        }
+
+        async function handleRefineBody(langCode, tone) {
+            const content = state.generatedContent?.[langCode];
+            if (!content) return;
+
+            state.bodyRefineLoading = langCode;
+            renderCardContent(langCode); // Pokaż ładowanie
+
+            const prompt = `Rewrite the following email body to be ${tone}.
+Maintain the core message and professional tone.
+Respond with a single JSON object: {"rewrittenBody": "..."}
+
+Original Body:
+${content.body}`;
+
+            try {
+                const rewrittenBody = await callGeminiForRewrite(prompt);
+                if (rewrittenBody) {
+                    state.generatedContent[langCode].body = rewrittenBody;
+                }
+            } catch (error) {
+                console.error(`Failed to refine body for ${langCode}:`, error);
+            } finally {
+                state.bodyRefineLoading = null;
+                renderCardContent(langCode); // Zrenderuj nową treść
+            }
+        }
+
+        async function handleGenerateAssets(langCode) {
+            const content = state.generatedContent?.[langCode];
+            if (!content) return;
+
+            state.assetGenerationLoading = langCode;
+            renderCardContent(langCode); // Pokaż ładowanie na przycisku
+
+            const prompt = `Based on the following email content, generate marketing assets to promote it.
+Create:
+1.  A professional LinkedIn post. Use newlines (\\n) for formatting.
+2.  A concise and engaging X (Twitter) post (under 280 characters).
+3.  A descriptive image generation prompt for a text-to-image AI (like Imagen) to create a suitable header image.
+4.  An array of 3 brief target audience personas (name and description) this email would appeal to.
+
+Respond with a single JSON object: {"linkedinPost": "...", "twitterPost": "...", "imagePrompt": "...", "audiencePersonas": [{"name": "...", "description": "..."}, ...]}
+
+Email Subject: ${content.subject}
+Email Body:
+${content.body}`;
+
+            try {
+                const assets = await callGeminiForAssets(prompt);
+                if (assets) {
+                    showModal(langCode, assets);
+                }
+            } catch (error) {
+                console.error(`Failed to generate assets for ${langCode}:`, error);
+            } finally {
+                state.assetGenerationLoading = null;
+                renderCardContent(langCode); // Usuń ładowanie z przycisku
+            }
+        }
+
+        function showModal(langCode, assets) {
+            const { linkedinPost, twitterPost, imagePrompt, audiencePersonas } = assets;
+
+            const personasHTML = (audiencePersonas && audiencePersonas.length > 0) ? `
+                <div>
+                    <strong class="text-sm font-semibold flex items-center gap-2 mb-2"><i data-lucide="users" class="w-4 h-4 text-green-600"></i> Target Personas</strong>
+                    <div class="space-y-2">
+                        ${audiencePersonas.map(persona => `
+                            <div class="p-3 bg-gray-50 rounded border">
+                                <strong class="text-sm text-gray-800">${persona.name}</strong>
+                                <p class="text-sm text-gray-600">${persona.description}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            ` : '';
+
+            dom.assetsModalContent.innerHTML = `
+                <div class="space-y-6">
+                    ${personasHTML}
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <strong class="text-sm font-semibold flex items-center gap-2"><i data-lucide="linkedin" class="w-4 h-4 text-blue-700"></i> LinkedIn Post</strong>
+                            ${createCopyButton(linkedinPost)}
+                        </div>
+                        <p class="p-3 bg-gray-50 text-sm rounded border whitespace-pre-wrap">${linkedinPost.replace(/\\n/g, '\n')}</p>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <strong class="text-sm font-semibold flex items-center gap-2"><i data-lucide="twitter" class="w-4 h-4 text-sky-500"></i> X (Twitter) Post</strong>
+                            ${createCopyButton(twitterPost)}
+                        </div>
+                        <p class="p-3 bg-gray-50 text-sm rounded border whitespace-pre-wrap">${twitterPost.replace(/\\n/g, '\n')}</p>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <strong class="text-sm font-semibold flex items-center gap-2"><i data-lucide="image" class="w-4 h-4 text-purple-600"></i> Image Prompt</strong>
+                            ${createCopyButton(imagePrompt)}
+                        </div>
+                        <p class="p-3 bg-gray-50 text-sm rounded border italic text-gray-700">${imagePrompt}</p>
+
+                        <div class="mt-3">
+                            <button id="generate-image-btn" class="px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 flex items-center justify-center gap-2 text-sm disabled:bg-purple-300 disabled:cursor-wait w-full">
+                                <i data-lucide="sparkles" class="w-4 h-4"></i> ✨ Generate Preview Image
+                            </button>
+                            <div id="image-preview-container" class="mt-3 w-full min-h-[100px] flex items-center justify-center bg-gray-100 rounded border border-gray-200 overflow-hidden">
+                                <span class="text-sm text-gray-500">Image preview will appear here</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            dom.assetsModal.classList.remove('hidden');
+
+            const genImgBtn = document.getElementById('generate-image-btn');
+            const imgPreviewContainer = document.getElementById('image-preview-container');
+
+            if (genImgBtn && imgPreviewContainer) {
+                genImgBtn.addEventListener('click', async () => {
+                    genImgBtn.disabled = true;
+                    genImgBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Generating Image...';
+                    imgPreviewContainer.innerHTML = '<i data-lucide="loader-2" class="w-8 h-8 animate-spin text-purple-600"></i>';
+                    lucide.createIcons();
+
+                    try {
+                        const imageUrl = await callImagenApi(imagePrompt);
+                        imgPreviewContainer.innerHTML = `<img src="${imageUrl}" alt="Generated campaign image" class="w-full h-auto">`;
+                        genImgBtn.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> Image Generated';
+                    } catch (error) {
+                        console.error("Imagen generation failed:", error);
+                        imgPreviewContainer.innerHTML = '<span class="text-sm text-red-500 p-4">Image generation failed. Please try again.</span>';
+                        genImgBtn.disabled = false;
+                        genImgBtn.innerHTML = '<i data-lucide="sparkles" class="w-4 h-4"></i> ✨ Generate Preview Image';
+                        lucide.createIcons();
+                    }
+                });
+            }
+
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+
+        function hideModal() {
+            dom.assetsModal.classList.add('hidden');
+            dom.assetsModalContent.innerHTML = '';
+        }
+
+        // --- ✨ NOWE FUNKCJE: Obsługa modala e-mail ---
+
+        /**
+         * Formatuje całą wygenerowaną treść do pojedynczego stringa
+         */
+        function formatContentForEmail() {
+            let fullText = "ELOQUA CAMPAIGN GENERATOR - EXPORTED RESULTS\n";
+            fullText += `Generated on: ${new Date().toLocaleString()}\n`;
+            fullText += `Source: ${getSourceContent()}\n\n`;
+
+            if (!state.generatedContent || Object.keys(state.generatedContent).length === 0) {
+                return fullText + "No content generated.";
+            }
+
+            for (const langCode of state.selectedLanguages) {
+                const content = state.generatedContent[langCode];
+                if (content) {
+                    const lang = LANGUAGES[langCode];
+                    fullText += `==================================\n`;
+                    fullText += `LANGUAGE: ${lang.name} (${langCode}) ${lang.flag}\n`;
+                    fullText += `==================================\n\n`;
+                    fullText += `Subject: ${content.subject}\n`;
+                    fullText += `Preheader: ${content.preheader}\n`;
+                    fullText += `CTA: ${content.cta}\n\n`;
+
+                    fullText += `Body:\n${content.body.replace(/\\n/g, '\n')}\n\n`;
+
+                    if (content.keyInsights && content.keyInsights.length > 0) {
+                        fullText += `Key Insights:\n${content.keyInsights.map(insight => `- ${insight}`).join('\n')}\n\n`;
+                    }
+                }
+            }
+            return fullText;
+        }
+
+        /**
+         * Otwiera modal e-maila
+         */
+        function showEmailModal() {
+            const emailBody = formatContentForEmail();
+            dom.emailModalContent.value = emailBody;
+            dom.emailModal.classList.remove('hidden');
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+
+        /**
+         * Zamyka modal e-maila
+         */
+        function hideEmailModal() {
+            dom.emailModal.classList.add('hidden');
+            dom.emailModalContent.value = '';
+        }
+
+        /**
+         * Kopiuje zawartość e-maila i pokazuje potwierdzenie
+         */
+        function copyEmailContent() {
+            const content = dom.emailModalContent.value;
+            safeClipboardCopy(content, () => {
+                const btn = dom.emailModalCopyButton;
+                btn.innerHTML = '<i data-lucide="check-circle" class="w-4 h-4"></i> Copied!';
+                btn.classList.add('bg-green-600', 'hover:bg-green-700');
+                btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+
+                setTimeout(() => {
+                    btn.innerHTML = '<i data-lucide="copy" class="w-4 h-4"></i> Copy All to Clipboard';
+                    btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                    btn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                }, 2000);
+            });
+        }
+
+        // --- FUNKCJE ZARZĄDZANIA API KEY MODAL ---
+
+        function showApiKeyModal() {
+            const modal = document.getElementById('apiKeyModal');
+            const input = document.getElementById('apiKeyInput');
+            input.value = API_KEY;
+            modal.classList.remove('hidden');
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+
+        function hideApiKeyModal() {
+            const modal = document.getElementById('apiKeyModal');
+            modal.classList.add('hidden');
+        }
+
+        function saveApiKey() {
+            const input = document.getElementById('apiKeyInput');
+            const key = input.value.trim();
+            setApiKey(key);
+            hideApiKeyModal();
+            if (key) {
+                alert('API Key saved successfully!');
+            }
+        }
+
+        function clearApiKey() {
+            if (confirm('Are you sure you want to clear the API key?')) {
+                setApiKey('');
+                document.getElementById('apiKeyInput').value = '';
+                hideApiKeyModal();
+            }
+        }
+
+        // ---
+
+        function handleResultsClick(e) {
+            const button = e.target.closest('button[data-action]');
+            if (!button) return;
+
+            const { action, lang, tone, text } = button.dataset;
+
+            if (action === 'copy') {
+                safeClipboardCopy(decodeURIComponent(text), () => {
+                    const icon = button.querySelector('i');
+                    if (icon) {
+                        const originalIcon = icon.dataset.lucide;
+                        icon.setAttribute('data-lucide', 'check-circle');
+                        icon.classList.add('text-green-500');
+                        lucide.createIcons();
+                        setTimeout(() => {
+                            icon.setAttribute('data-lucide', originalIcon);
+                            icon.classList.remove('text-green-500');
+                            lucide.createIcons();
+                        }, 2000);
+                    }
+                });
+            } else if (action === 'suggest-subjects') {
+                handleGenerateSubjectVariations(lang);
+            } else if (action === 'refine-body') {
+                handleRefineBody(lang, tone);
+            } else if (action === 'generate-assets') {
+                handleGenerateAssets(lang);
+            }
+        }
+
+        function downloadBlob(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function exportData(format) {
+            if (!state.generatedContent) return;
+            const data = Object.entries(state.generatedContent).map(([lang, content]) => ({
+                language_code: lang,
+                language_name: LANGUAGES[lang].name,
+                subject: content.subject,
+                preheader: content.preheader,
+                body: content.body,
+                cta: content.cta,
+                key_insights: content.keyInsights.join('; ')
+            }));
+            if (format === 'json') {
+                downloadBlob(new Blob([JSON.stringify(data, null, 2)], { type: "application/json;charset=utf-8" }), 'eloqua-content.json');
+            } else {
+                const header = Object.keys(data[0]).join(',');
+                const rows = data.map(row => Object.values(row).map(val => `"${String(val).replace(/"/g, '""')}"`).join(','));
+                downloadBlob(new Blob([`${header}\n${rows.join('\n')}`], { type: "text/csv;charset=utf-8" }), 'eloqua-content.csv');
+            }
+        }
+
+        // --- FUNKCJE RENDERUJĄCE ---
+
+        function renderLanguageSelector() {
+            dom.languageSelector.innerHTML = Object.entries(LANGUAGES).map(([code, lang]) => `
+                <button
+                    class="p-3 rounded-lg border-2 text-center transition-all ${state.selectedLanguages.includes(code) ? 'border-[#003C5C] bg-blue-50' : 'border-gray-200 hover:border-gray-300'}"
+                    data-lang="${code}"
+                >
+                    <span class="text-3xl" role="img" aria-label="${lang.name}">${lang.flag}</span>
+                    <div class="font-bold mt-1">${code}</div>
+                    <div class="text-xs text-gray-500">${lang.name}</div>
+                </button>
+            `).join('');
+
+            // Ponowne podpięcie listenerów
+            dom.languageSelector.querySelectorAll('button').forEach(btn => {
+                btn.addEventListener('click', () => toggleLanguage(btn.dataset.lang));
+            });
+        }
+
+        function updateButtons() {
+            dom.generateButton.classList.toggle('hidden', state.isProcessing);
+            dom.cancelButton.classList.toggle('hidden', !state.isProcessing);
+            checkReadiness();
+        }
+
+        function createCopyButton(textToCopy, icon = 'copy') {
+            return `
+                <button
+                    class="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-gray-100 rounded-md transition-colors"
+                    data-action="copy"
+                    data-text="${encodeURIComponent(textToCopy)}"
+                >
+                    <i data-lucide="${icon}" class="w-4 h-4"></i>
+                </button>
+            `;
+        }
+
+        function renderCardContent(langCode) {
+            const card = document.getElementById(`card-${langCode}`);
+            if (!card) return;
+
+            const contentContainer = card.querySelector('.content-container');
+            const statusContainer = card.querySelector('.status-container');
+
+            const status = state.languageStatus[langCode];
+            const content = state.generatedContent[langCode];
+
+            // Aktualizacja statusu
+            let statusIcon = '';
+            if (status.status === 'processing') {
+                statusIcon = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin text-[#003C5C]"></i>';
+            } else if (status.status === 'success' && content) {
+                statusIcon = '<i data-lucide="check-circle" class="w-5 h-5 text-green-500"></i>';
+            } else if (status.status === 'error') {
+                statusIcon = `<i data-lucide="alert-triangle" class="w-5 h-5 text-red-500" title="${status.error}"></i>`;
+            }
+            statusContainer.innerHTML = statusIcon;
+
+            // Aktualizacja treści
+            if (content) {
+                const variations = state.alternativeSubjects[langCode] || [];
+                const insights = content.keyInsights || [];
+
+                contentContainer.innerHTML = `
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between pt-2"><strong class="text-sm">Subject:</strong>
+                            <div class="flex items-center gap-2">
+                                <button
+                                    class="p-1 text-xs text-blue-600 hover:bg-blue-50 rounded-md flex items-center gap-1 transition-colors disabled:opacity-50 disabled:cursor-wait"
+                                    data-action="suggest-subjects"
+                                    data-lang="${langCode}"
+                                    ${state.subjectLineLoading === langCode ? 'disabled' : ''}
+                                >
+                                    ${state.subjectLineLoading === langCode
+                                        ? '<i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i>'
+                                        : '<i data-lucide="sparkles" class="w-3 h-3"></i>'}
+                                    ✨ Suggest Variations
+                                </button>
+                                ${createCopyButton(content.subject)}
+                            </div>
+                        </div>
+                        <p class="p-2 bg-yellow-50 text-sm rounded">${content.subject}</p>
+
+                        ${variations.length > 0 ? `
+                            <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
+                                <h4 class="text-sm font-semibold text-blue-800 flex items-center gap-1.5"><i data-lucide="sparkles" class="w-3 h-3"></i> Subject Variations</h4>
+                                <ul class="list-disc list-inside pl-2 space-y-1">
+                                    ${variations.map(subject => `
+                                        <li class="text-sm text-gray-700 flex justify-between items-center group">
+                                            <span>${subject}</span>
+                                            <span class="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                ${createCopyButton(subject)}
+                                            </span>
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            </div>
+                        ` : ''}
+
+                        <div class="flex items-center justify-between pt-2"><strong class="text-sm">Preheader:</strong> ${createCopyButton(content.preheader)}</div>
+                        <p class="p-2 bg-blue-50 text-sm rounded">${content.preheader}</p>
+
+                        <div class="flex items-center justify-between pt-2"><strong class="text-sm">Body:</strong>
+                            <div class="flex items-center gap-2">
+                                ${state.bodyRefineLoading === langCode
+                                    ? '<i data-lucide="loader-2" class="w-4 h-4 animate-spin text-blue-600"></i>'
+                                    : `
+                                    <div class="flex items-center gap-1 text-xs text-blue-600" title="Refine body content with Gemini">
+                                        <i data-lucide="sparkles" class="w-3 h-3"></i>
+                                        <span>Refine:</span>
+                                        <button class="p-1 hover:bg-blue-50 rounded-md font-semibold" data-action="refine-body" data-lang="${langCode}" data-tone="more formal">Formal</button>
+                                        <button class="p-1 hover:bg-blue-50 rounded-md font-semibold" data-action="refine-body" data-lang="${langCode}" data-tone="more concise">Concise</button>
+                                    </div>
+                                `}
+                                ${createCopyButton(content.body)}
+                            </div>
+                        </div>
+                        <p class="p-2 bg-gray-50 text-sm rounded whitespace-pre-wrap">${content.body.replace(/\\n/g, '\n')}</p>
+
+                        ${insights.length > 0 ? `
+                            <strong class="text-sm pt-2 block">Key Insights:</strong>
+                            <ul class="list-disc list-inside pl-2 space-y-1">
+                                ${insights.map(insight => `<li class="text-sm text-gray-700">${insight}</li>`).join('')}
+                            </ul>
+                        ` : ''}
+
+                        <div class="flex items-center justify-between pt-2"><strong class="text-sm">CTA:</strong> ${createCopyButton(content.cta)}</div>
+                        <p class="p-2 bg-green-50 text-sm rounded">${content.cta}</p>
+
+                        <!-- SEKCJA: Przycisk generowania zasobów -->
+                        <div class="pt-4 border-t mt-4">
+                            <button
+                                class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 flex items-center justify-center gap-2 text-sm disabled:bg-blue-300 disabled:cursor-wait"
+                                data-action="generate-assets"
+                                data-lang="${langCode}"
+                                ${state.assetGenerationLoading === langCode ? 'disabled' : ''}
+                            >
+                                ${state.assetGenerationLoading === langCode
+                                    ? '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Generating...'
+                                    : '<i data-lucide="package-plus" class="w-4 h-4"></i> ✨ Generate Campaign Assets'
+                                }
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } else if (status.status !== 'processing') {
+                // Pokaż pole do ręcznego wklejania
+                const prompt = getBasePrompt(LANGUAGES[langCode].name);
+                contentContainer.innerHTML = `
+                    <div class="flex items-center gap-2 text-sm text-gray-500"><i data-lucide="copy" class="w-3 h-3"></i><span>Copy the prompt to use in another AI, or...</span></div>
+                    <div class="flex gap-2">
+                        <input readonly value="${prompt.replace(/"/g, '&quot;')}" class="w-full px-3 py-2 bg-gray-100 rounded-lg text-sm font-mono truncate" />
+                        ${createCopyButton(prompt)}
+                    </div>
+                    <textarea
+                        placeholder="...paste a valid JSON reply for ${LANGUAGES[langCode].name} here."
+                        class="w-full h-24 p-2 border rounded-lg text-sm font-mono focus:ring-2 outline-none resize-y ${status.status === 'error' ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-[#003C5C]'}"
+                        data-lang="${langCode}"
+                    ></textarea>
+                `;
+                // Listener dla ręcznego wklejania
+                const textarea = contentContainer.querySelector('textarea');
+                if (textarea) {
+                    textarea.addEventListener('change', (e) => handleManualPaste(langCode, e.target.value));
+                }
+            }
+
+            // Zawsze na końcu renderowania karty, wywołaj createIcons
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+
+        function renderResults() {
+            if (!state.languageStatus) {
+                dom.resultsContainer.innerHTML = '';
+                return;
+            }
+
+            // Tworzenie nagłówka z przyciskami eksportu
+            const hasSuccess = Object.values(state.languageStatus).some(s => s.status === 'success');
+            const headerHTML = `
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-6">
+                    <div class="flex flex-wrap justify-between items-center gap-4">
+                        <h2 class="text-xl font-bold flex items-center gap-3"><span class="bg-[#003C5C] text-white rounded-full h-8 w-8 flex items-center justify-center font-bold">3</span> Review & Export</h2>
+                        <div class="flex flex-wrap gap-2">
+                            <!-- ✨ NOWY PRZYCISK: Wyślij E-mailem -->
+                            <button id="emailResultsButton" ${!hasSuccess ? 'disabled' : ''} class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 text-sm disabled:bg-gray-300">
+                                <i data-lucide="mail" class="w-4 h-4"></i> Send by E-mail
+                            </button>
+                            <button id="exportJson" ${!hasSuccess ? 'disabled' : ''} class="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 flex items-center gap-2 text-sm disabled:bg-gray-300">
+                                <i data-lucide="download" class="w-4 h-4"></i> Export JSON
+                            </button>
+                            <button id="exportCsv" ${!hasSuccess ? 'disabled' : ''} class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 text-sm disabled:bg-gray-300">
+                                <i data-lucide="download" class="w-4 h-4"></i> Export CSV
+                            </button>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        ${state.selectedLanguages.map(langCode => `
+                            <div class="border border-gray-200 rounded-lg" id="card-${langCode}">
+                                <div class="p-4 bg-gray-50 flex items-center justify-between">
+                                    <h3 class="font-bold text-lg flex items-center gap-3">
+                                        <span class="text-2xl">${LANGUAGES[langCode].flag}</span>
+                                        ${LANGUAGES[langCode].name} (${langCode})
+                                    </h3>
+                                    <div class="status-container w-5 h-5">
+                                        <!-- Status icon will be inserted here -->
+                                    </div>
+                                </div>
+                                <div class="p-4 space-y-4 content-container">
+                                    <!-- Content will be inserted here -->
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+
+            dom.resultsContainer.innerHTML = headerHTML;
+
+            // Podpięcie listenerów eksportu
+            document.getElementById('exportJson').addEventListener('click', () => exportData('json'));
+            document.getElementById('exportCsv').addEventListener('click', () => exportData('csv'));
+            // ✨ NOWY LISTENER: Przycisk e-maila
+            document.getElementById('emailResultsButton').addEventListener('click', showEmailModal);
+
+            // Wypełnienie treści kart
+            state.selectedLanguages.forEach(langCode => {
+                renderCardContent(langCode);
+            });
+
+            // Aktywacja ikon
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+
+        // --- INICJALIZACJA APLIKACJI ---
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Upewnij się, że lucide jest dostępne, zanim spróbujesz go użyć
+            if (typeof lucide === 'undefined') {
+                console.error('Lucide icons script failed to load.');
+                return;
+            }
+
+            // Inicjalizacja zakładek
+            dom.tabButtons.forEach(btn => {
+                btn.addEventListener('click', handleTabClick);
+            });
+
+            // Listenery dla inputów
+            dom.sourceUrlInput.addEventListener('input', (e) => {
+                state.sourceUrl = e.target.value;
+                checkReadiness();
+            });
+            dom.sourceTextInput.addEventListener('input', (e) => {
+                state.sourceText = e.target.value;
+                checkReadiness();
+            });
+            dom.sourceFileInput.addEventListener('change', handleFileChange);
+
+            // Inicjalizacja języków
+            renderLanguageSelector();
+
+            // Główne przyciski
+            dom.generateButton.addEventListener('click', handleGenerate);
+            dom.cancelButton.addEventListener('click', handleCancel);
+
+            // Listenery modala zasobów
+            dom.assetsModalCloseButton.addEventListener('click', hideModal);
+            dom.assetsModal.addEventListener('click', (e) => {
+                if (e.target === dom.assetsModal) hideModal();
+            });
+
+            // ✨ NOWE LISTENERY: Listenery modala e-mail
+            dom.emailModalCloseButton.addEventListener('click', hideEmailModal);
+            dom.emailModalCopyButton.addEventListener('click', copyEmailContent);
+            dom.emailModal.addEventListener('click', (e) => {
+                if (e.target === dom.emailModal) hideEmailModal();
+            });
+
+            // Listenery modala API key
+            document.getElementById('apiKeyButton').addEventListener('click', showApiKeyModal);
+            document.getElementById('apiKeyModalCloseButton').addEventListener('click', hideApiKeyModal);
+            document.getElementById('apiKeySaveButton').addEventListener('click', saveApiKey);
+            document.getElementById('apiKeyClearButton').addEventListener('click', clearApiKey);
+            document.getElementById('apiKeyModal').addEventListener('click', (e) => {
+                if (e.target.id === 'apiKeyModal') hideApiKeyModal();
+            });
+
+            // Delegacja zdarzeń dla dynamicznych wyników
+            dom.resultsContainer.addEventListener('click', handleResultsClick);
+
+            // Stan początkowy
+            checkReadiness();
+            updateButtons();
+            updateApiKeyStatus(); // Aktualizuj status API key
+
+            // Inicjalizacja ikon
+            lucide.createIcons();
+        });
+
+    </script>
+</body>
+</html>
