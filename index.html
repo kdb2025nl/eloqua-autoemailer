@@ -35,15 +35,12 @@
 </head>
 <body class="bg-gray-50 font-sans text-gray-800">
 
-    <!-- Nagłówek Atradius -->
+    <!-- Nagłówek -->
     <div class="w-full bg-[#003C5C] p-8 text-white">
         <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
-            <div class="flex items-center gap-4">
-                <img src="https://www.atradius.group/assets/media/atradius-logo-white.svg" alt="Atradius Collections Logo" class="h-10 md:h-12">
-                <div>
-                    <h1 class="text-3xl md:text-4xl font-bold">Eloqua Campaign Generator</h1>
-                    <p class="text-lg opacity-90">Draft multilingual email templates from any source</p>
-                </div>
+            <div>
+                <h1 class="text-3xl md:text-4xl font-bold">Eloqua Campaign Generator</h1>
+                <p class="text-lg opacity-90">Draft multilingual email templates from any source</p>
             </div>
             <button id="apiKeyButton" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg flex items-center gap-2 text-sm transition-colors border border-white/20">
                 <i data-lucide="key" class="w-4 h-4"></i>
@@ -71,7 +68,7 @@
 
             <div id="input-container">
                 <div id="input-url">
-                    <input type="url" id="sourceUrl" value="https://atradiuscollections.com/global/knowledge-and-research/reports/economic-research-economic-outlook-july-2025" placeholder="https://example.com/article" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003C5C] outline-none">
+                    <input type="url" id="sourceUrl" value="" placeholder="https://example.com/article" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003C5C] outline-none">
                 </div>
                 <div id="input-text" class="hidden">
                     <textarea id="sourceText" placeholder="Paste your article or text content here..." class="w-full h-32 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003C5C] outline-none resize-y"></textarea>
@@ -100,7 +97,7 @@
         <!-- Krok 3: Generowanie -->
         <div class="text-center">
             <button id="generateButton" class="px-8 py-4 bg-[#003C5C] text-white rounded-lg font-semibold hover:bg-[#003C5C]/90 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-3 mx-auto shadow-lg transition-transform hover:scale-105 disabled:transform-none disabled:shadow-none">
-                <i data-lucide="zap" class="w-5 h-5"></i> Generate with Gemini
+                <i data-lucide="zap" class="w-5 h-5"></i> Generate
             </button>
             <button id="cancelButton" class="hidden px-8 py-4 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 flex items-center gap-3 mx-auto shadow-lg transition-transform hover:scale-105">
                 <i data-lucide="x" class="w-5 h-5"></i> Cancel Generation
@@ -230,7 +227,7 @@
 
         let state = {
             inputType: 'url',
-            sourceUrl: 'https://atradiuscollections.com/global/knowledge-and-research/reports/economic-research-economic-outlook-july-2025',
+            sourceUrl: '',
             sourceText: '',
             sourceFile: null, // { name: string, content: string }
             selectedLanguages: ['EN', 'DE', 'NL', 'FR'],
@@ -335,12 +332,42 @@
             const sourceContent = getSourceContent();
             const sourceIdentifier = state.inputType === 'url' ? `the article at ${sourceContent}` : `the following text`;
             const sourceData = state.inputType !== 'url' ? `\n\n---SOURCE TEXT---\n${sourceContent}\n---END SOURCE TEXT---` : '';
-            return `Based on ${sourceIdentifier}, generate professional email content in ${languageName} specifically for **current clients**. Maintain a professional yet familiar and helpful tone, acknowledging the existing relationship. The goal is to provide value and strengthen our partnership.
+            return `Based on ${sourceIdentifier}, generate professional email content in ${languageName} specifically for **current clients**.
+
+BRAND VOICE GUIDELINES (CRITICAL - MUST FOLLOW):
+You must embody these three core qualities in ALL content:
+
+1. CLEAR: Use simple, straightforward language. Avoid jargon and complicated terms. Keep sentences under 18 words where possible. Use active voice, not passive. Get to the point quickly. Use contractions (we're, you're, it's) to feel warmer and more natural.
+
+2. CONFIDENT: Use strong, dynamic words. Be direct and leave no room for doubt. Showcase expertise without being boastful. Use words like: ability, action, confident, determination, enable, robust, succeed, transform.
+
+3. HELPFUL: Focus on the reader and their needs. Be warm and human. Think about what value you're providing. Use words like: support, ease, helpful, dedicated, together, clarity, relief.
+
+WRITING STYLE RULES:
+- Use British English spelling and grammar (organisations not organizations, colour not color)
+- Always use active voice ("We help you" NOT "You are helped by us")
+- Use contractions to sound natural (we're, you'll, it's)
+- Avoid formal, old-fashioned language (don't use: notwithstanding, whereby, furthermore)
+- Avoid jargon - write as if speaking to an intelligent professional in a warm conversation
+- Lead with customer benefits, not company features
+- Include people and human elements where possible
+- Be specific and concrete, avoid ambiguity
+
 Please create:
-1. A compelling, client-focused subject line (max 15 words).
-2. A short, engaging preheader (max 20 words) that appears after the subject line.
-3. A professional email body (approx. 150-200 words). Structure it with an engaging opening that references our partnership, 2-3 key insights relevant to their business, and a clear call-to-action. Use '\\n' for new paragraphs to ensure proper formatting and readability.
-4. A short, actionable call-to-action text (max 5 words).
+1. A compelling, client-focused subject line (max 15 words). Be clear, confident, and focus on the reader benefit.
+2. A short, engaging preheader (max 20 words) that appears after the subject line. Make it helpful and intriguing.
+3. A professional email body (approx. 150-200 words). Structure it with:
+   - An engaging opening that acknowledges our partnership
+   - 2-3 key insights relevant to their business (be helpful and clear)
+   - A clear call-to-action (be confident and direct)
+   - Use '\\n' for new paragraphs to ensure proper formatting
+   - Keep sentences varied in length but aim for under 18 words
+   - Use warm, professional language - imagine a conversation with a business contact
+4. A short, actionable call-to-action text (max 5 words). Be confident and direct.
+5. Key insights: 2-3 clear, actionable insights that demonstrate our expertise while being helpful.
+
+Remember: Be CLEAR (simple language), CONFIDENT (strong and direct), HELPFUL (focused on the reader's needs).
+
 Format the entire response as a single, clean JSON object, with no surrounding text or markdown.${sourceData}`;
         };
 
@@ -538,39 +565,6 @@ Format the entire response as a single, clean JSON object, with no surrounding t
             throw new Error("API call failed after multiple retries.");
         }
 
-        async function callImagenApi(prompt) {
-            const apiKey = getApiKey();
-            if (!apiKey) throw new Error("API key not configured");
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
-            const payload = {
-                instances: [{ prompt: prompt }],
-                parameters: { "sampleCount": 1 }
-            };
-
-            let attempts = 0;
-            while (attempts < 3) {
-                try {
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                    if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
-                    const result = await response.json();
-                    if (result.predictions && result.predictions[0]?.bytesBase64Encoded) {
-                        return `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`;
-                    } else {
-                        throw new Error("Invalid Imagen API response structure");
-                    }
-                } catch (error) {
-                    attempts++;
-                    console.error(`Imagen Attempt ${attempts} failed:`, error);
-                    if (attempts >= 3) throw error;
-                    await sleep(1000 * attempts);
-                }
-            }
-            throw new Error("Imagen API call failed after multiple retries.");
-        }
 
 
         // --- HANDLERY ZDARZEŃ ---
@@ -719,7 +713,21 @@ Format the entire response as a single, clean JSON object, with no surrounding t
             renderCardContent(langCode); // Zaktualizuj UI, aby pokazać ładowanie
 
             const prompt = `Based on the following email subject and body, generate 3 compelling alternative subject lines for A/B testing.
-Maintain a professional and client-focused tone.
+
+BRAND VOICE - MUST FOLLOW:
+- CLEAR: Simple, straightforward language. Avoid jargon. Keep under 15 words.
+- CONFIDENT: Strong, direct words. No ambiguity. Use active voice.
+- HELPFUL: Focus on reader benefit, not just features. Make it about them.
+
+STYLE RULES:
+- Use British English spelling
+- Use contractions naturally (we're, you'll, it's)
+- Lead with customer benefit
+- Be specific and concrete
+- Avoid formal, old-fashioned language
+
+Generate 3 distinct variations that test different angles (benefit-focused, urgency-driven, curiosity-based).
+
 Respond as a simple JSON array of strings. e.g., ["Subject variation 1", "Subject variation 2", "Subject variation 3"]
 
 Original Subject: ${content.subject}
@@ -743,8 +751,24 @@ Email Body: ${content.body}`;
             state.bodyRefineLoading = langCode;
             renderCardContent(langCode); // Pokaż ładowanie
 
-            const prompt = `Rewrite the following email body to be ${tone}.
-Maintain the core message and professional tone.
+            const prompt = `Rewrite the following email body to be ${tone}, while strictly maintaining our brand voice.
+
+BRAND VOICE - CRITICAL TO MAINTAIN:
+- CLEAR: Simple, straightforward language. Avoid jargon. Keep sentences under 18 words. Use active voice.
+- CONFIDENT: Strong, direct words. Be assertive but not boastful. Use dynamic language.
+- HELPFUL: Focus on reader needs and benefits. Be warm and human.
+
+STYLE RULES:
+- Use British English spelling and grammar
+- Use contractions (we're, you'll, it's) for warmth
+- Use active voice ("We help you" NOT "You are helped")
+- Avoid jargon and complicated terminology
+- Lead with customer benefits
+- Be specific and concrete
+
+Adjust the tone to be ${tone} while keeping all brand voice qualities intact.
+Use '\\n' for paragraph breaks.
+
 Respond with a single JSON object: {"rewrittenBody": "..."}
 
 Original Body:
@@ -771,11 +795,28 @@ ${content.body}`;
             renderCardContent(langCode); // Pokaż ładowanie na przycisku
 
             const prompt = `Based on the following email content, generate marketing assets to promote it.
+
+BRAND VOICE - APPLY TO ALL ASSETS:
+- CLEAR: Simple, straightforward language. Avoid jargon. Use active voice. Get to the point quickly.
+- CONFIDENT: Strong, direct words. Be assertive without being boastful. Use dynamic language.
+- HELPFUL: Focus on reader benefit and value. Be warm and human.
+
+STYLE RULES (ALL CONTENT):
+- Use British English spelling and grammar
+- Use contractions naturally (we're, you'll, it's)
+- Use active voice consistently
+- Avoid jargon and complicated terminology
+- Lead with customer benefits, not features
+- Be specific and concrete
+
 Create:
-1.  A professional LinkedIn post. Use newlines (\\n) for formatting.
-2.  A concise and engaging X (Twitter) post (under 280 characters).
-3.  A descriptive image generation prompt for a text-to-image AI (like Imagen) to create a suitable header image.
-4.  An array of 3 brief target audience personas (name and description) this email would appeal to.
+1. A professional LinkedIn post (150-200 words). Make it CLEAR, CONFIDENT, and HELPFUL. Structure: engaging opening, 2-3 key points, call-to-action. Use newlines (\\n) for paragraph formatting. Focus on insights that help the reader.
+
+2. A concise and engaging X (Twitter) post (under 280 characters). Be punchy and benefit-focused. Lead with value. Use active voice.
+
+3. A descriptive image generation prompt for a text-to-image AI. Be specific about composition, mood, style, and key elements. Make it professional and aligned with business context.
+
+4. An array of 3 brief target audience personas. For each: a clear role/title name, and a 2-sentence description focusing on their business challenges and what value they seek.
 
 Respond with a single JSON object: {"linkedinPost": "...", "twitterPost": "...", "imagePrompt": "...", "audiencePersonas": [{"name": "...", "description": "..."}, ...]}
 
@@ -836,43 +877,11 @@ ${content.body}`;
                             ${createCopyButton(imagePrompt)}
                         </div>
                         <p class="p-3 bg-gray-50 text-sm rounded border italic text-gray-700">${imagePrompt}</p>
-
-                        <div class="mt-3">
-                            <button id="generate-image-btn" class="px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 flex items-center justify-center gap-2 text-sm disabled:bg-purple-300 disabled:cursor-wait w-full">
-                                <i data-lucide="sparkles" class="w-4 h-4"></i> ✨ Generate Preview Image
-                            </button>
-                            <div id="image-preview-container" class="mt-3 w-full min-h-[100px] flex items-center justify-center bg-gray-100 rounded border border-gray-200 overflow-hidden">
-                                <span class="text-sm text-gray-500">Image preview will appear here</span>
-                            </div>
-                        </div>
+                        <p class="text-xs text-gray-500 mt-2">Use this prompt with your preferred AI image generator (e.g., DALL-E, Midjourney, Stable Diffusion)</p>
                     </div>
                 </div>
             `;
             dom.assetsModal.classList.remove('hidden');
-
-            const genImgBtn = document.getElementById('generate-image-btn');
-            const imgPreviewContainer = document.getElementById('image-preview-container');
-
-            if (genImgBtn && imgPreviewContainer) {
-                genImgBtn.addEventListener('click', async () => {
-                    genImgBtn.disabled = true;
-                    genImgBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Generating Image...';
-                    imgPreviewContainer.innerHTML = '<i data-lucide="loader-2" class="w-8 h-8 animate-spin text-purple-600"></i>';
-                    lucide.createIcons();
-
-                    try {
-                        const imageUrl = await callImagenApi(imagePrompt);
-                        imgPreviewContainer.innerHTML = `<img src="${imageUrl}" alt="Generated campaign image" class="w-full h-auto">`;
-                        genImgBtn.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> Image Generated';
-                    } catch (error) {
-                        console.error("Imagen generation failed:", error);
-                        imgPreviewContainer.innerHTML = '<span class="text-sm text-red-500 p-4">Image generation failed. Please try again.</span>';
-                        genImgBtn.disabled = false;
-                        genImgBtn.innerHTML = '<i data-lucide="sparkles" class="w-4 h-4"></i> ✨ Generate Preview Image';
-                        lucide.createIcons();
-                    }
-                });
-            }
 
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
@@ -1170,7 +1179,7 @@ ${content.body}`;
                                 ${state.bodyRefineLoading === langCode
                                     ? '<i data-lucide="loader-2" class="w-4 h-4 animate-spin text-blue-600"></i>'
                                     : `
-                                    <div class="flex items-center gap-1 text-xs text-blue-600" title="Refine body content with Gemini">
+                                    <div class="flex items-center gap-1 text-xs text-blue-600" title="Refine body content">
                                         <i data-lucide="sparkles" class="w-3 h-3"></i>
                                         <span>Refine:</span>
                                         <button class="p-1 hover:bg-blue-50 rounded-md font-semibold" data-action="refine-body" data-lang="${langCode}" data-tone="more formal">Formal</button>

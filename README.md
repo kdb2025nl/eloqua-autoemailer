@@ -10,7 +10,6 @@ A powerful web application that generates multilingual email campaign templates 
 - **Campaign Assets**: Generate LinkedIn posts, Twitter posts, image prompts, and audience personas
 - **Content Refinement**: Refine email body tone (formal, concise) with AI
 - **Subject Line Variations**: Generate A/B testing variations for subject lines
-- **Image Generation**: Create campaign images using Imagen 3.0
 - **Export Options**: Export results as JSON, CSV, or email format
 - **Modern UI**: Beautiful, responsive interface built with Tailwind CSS
 
@@ -122,9 +121,8 @@ Each email includes:
 Generate additional marketing materials:
 - **LinkedIn Post**: Professional post with formatting
 - **X (Twitter) Post**: Concise post under 280 characters
-- **Image Prompt**: AI-ready prompt for image generation
+- **Image Prompt**: AI-ready prompt for use with external image generators (DALL-E, Midjourney, etc.)
 - **Audience Personas**: 3 target audience descriptions
-- **Campaign Image**: Generate preview images using Imagen 3.0
 
 ## API Limits & Costs
 
@@ -148,7 +146,6 @@ eloqua-automailer/
 ## Technologies Used
 
 - **Google Gemini 2.5 Flash**: AI content generation
-- **Google Imagen 3.0**: AI image generation
 - **Tailwind CSS**: Utility-first CSS framework
 - **Lucide Icons**: Beautiful icon library
 - **Vanilla JavaScript**: No framework dependencies
@@ -211,4 +208,4 @@ For issues or questions:
 
 ---
 
-**Built with ❤️ for Atradius Collections**
+**Built with ❤️ using Google Gemini AI**
