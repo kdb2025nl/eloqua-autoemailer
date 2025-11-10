@@ -23,20 +23,20 @@
         }
         /* Proste style dla zakładek */
         .tab-btn.active {
-            border-bottom: 2px solid #003C5C;
-            color: #003C5C;
-            background-color: #f0f5ff;
+            border-bottom: 2px solid #DC0028;
+            color: #DC0028;
+            background-color: #fff0f3;
         }
         /* Styl dla modali */
-        #assetsModal.hidden, #emailModal.hidden, #apiKeyModal.hidden {
+        #assetsModal.hidden, #emailModal.hidden, #apiKeyModal.hidden, #htmlPreviewModal.hidden, #feedbackModal.hidden {
             display: none;
         }
     </style>
 </head>
-<body class="bg-gray-50 font-sans text-gray-800">
+<body class="bg-gray-50 font-sans text-[#505050]">
 
     <!-- Nagłówek -->
-    <div class="w-full bg-[#003C5C] p-8 text-white">
+    <div class="w-full bg-[#DC0028] p-8 text-white">
         <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
             <div>
                 <h1 class="text-3xl md:text-4xl font-bold">Eloqua Campaign Generator</h1>
@@ -53,7 +53,7 @@
 
         <!-- Krok 1: Źródło -->
         <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-            <h2 class="text-xl font-bold mb-4 flex items-center gap-3"><span class="bg-[#003C5C] text-white rounded-full h-8 w-8 flex items-center justify-center font-bold">1</span> Choose Your Source</h2>
+            <h2 class="text-xl font-bold mb-4 flex items-center gap-3"><span class="bg-[#DC0028] text-white rounded-full h-8 w-8 flex items-center justify-center font-bold">1</span> Choose Your Source</h2>
             <div class="flex flex-wrap gap-2 border-b border-gray-200 mb-4">
                 <button id="tab-url" class="tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors flex items-center gap-2 active" data-type="url">
                     <i data-lucide="link" class="w-4 h-4"></i> URL
@@ -68,10 +68,10 @@
 
             <div id="input-container">
                 <div id="input-url">
-                    <input type="url" id="sourceUrl" value="" placeholder="https://example.com/article" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003C5C] outline-none">
+                    <input type="url" id="sourceUrl" value="" placeholder="https://example.com/article" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC0028] outline-none">
                 </div>
                 <div id="input-text" class="hidden">
-                    <textarea id="sourceText" placeholder="Paste your article or text content here..." class="w-full h-32 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003C5C] outline-none resize-y"></textarea>
+                    <textarea id="sourceText" placeholder="Paste your article or text content here..." class="w-full h-32 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC0028] outline-none resize-y"></textarea>
                 </div>
                 <div id="input-file" class="hidden">
                     <div class="flex items-center gap-4">
@@ -86,22 +86,51 @@
             </div>
         </div>
 
+        <!-- Krok 1.5: Brand Context -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+            <h2 class="text-xl font-bold mb-4 flex items-center gap-3">
+                <span class="bg-[#DC0028] text-white rounded-full h-8 w-8 flex items-center justify-center font-bold text-xs">1.5</span>
+                Brand Context – Who is this email for?
+            </h2>
+
+            <label for="brandAudience" class="block text-sm font-semibold text-gray-700 mb-2">
+                Select or describe your target audience:
+            </label>
+            <select id="brandAudience" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC0028] outline-none">
+                <option value="existing clients">Existing clients</option>
+                <option value="newsletter subscribers">Newsletter subscribers</option>
+                <option value="prospective clients">Prospective clients / leads</option>
+                <option value="business partners">Business partners</option>
+                <option value="other">Other (specify below)</option>
+            </select>
+
+            <textarea id="brandAudienceCustom" placeholder="If 'Other', describe briefly who this email targets (e.g. CFOs in manufacturing, event attendees)..." class="w-full h-20 mt-3 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC0028] outline-none resize-y hidden"></textarea>
+
+            <p class="text-xs text-gray-500 mt-2">
+                💡 Tip: defining your audience helps AI match tone, formality, and message relevance.
+            </p>
+        </div>
+
         <!-- Krok 2: Wybór języka -->
         <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-            <h2 class="text-xl font-bold mb-4 flex items-center gap-3"><span class="bg-[#003C5C] text-white rounded-full h-8 w-8 flex items-center justify-center font-bold">2</span> Select Languages</h2>
+            <h2 class="text-xl font-bold mb-4 flex items-center gap-3"><span class="bg-[#DC0028] text-white rounded-full h-8 w-8 flex items-center justify-center font-bold">2</span> Select Languages</h2>
             <div id="language-selector" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
                 <!-- Języki będą wstawione przez JS -->
             </div>
         </div>
 
         <!-- Krok 3: Generowanie -->
-        <div class="text-center">
-            <button id="generateButton" class="px-8 py-4 bg-[#003C5C] text-white rounded-lg font-semibold hover:bg-[#003C5C]/90 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-3 mx-auto shadow-lg transition-transform hover:scale-105 disabled:transform-none disabled:shadow-none">
+        <div class="text-center space-y-2">
+            <button id="generateButton" class="px-8 py-4 bg-[#DC0028] text-white rounded-lg font-semibold hover:bg-[#DC0028]/90 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-3 mx-auto shadow-lg transition-transform hover:scale-105 disabled:transform-none disabled:shadow-none">
                 <i data-lucide="zap" class="w-5 h-5"></i> Generate
             </button>
             <button id="cancelButton" class="hidden px-8 py-4 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 flex items-center gap-3 mx-auto shadow-lg transition-transform hover:scale-105">
                 <i data-lucide="x" class="w-5 h-5"></i> Cancel Generation
             </button>
+            <p id="estimatedTime" class="text-sm text-gray-500 hidden">
+                <i data-lucide="clock" class="w-4 h-4 inline"></i>
+                <span id="estimatedTimeText"></span>
+            </p>
         </div>
 
         <!-- Krok 4: Wyniki -->
@@ -147,6 +176,88 @@
         </div>
     </div>
 
+    <!-- Modal HTML Preview -->
+    <div id="htmlPreviewModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center p-4 border-b sticky top-0 bg-white z-10">
+                <h3 class="text-lg font-bold flex items-center gap-2"><i data-lucide="monitor" class="w-5 h-5 text-[#DC0028]"></i> HTML Email Preview</h3>
+                <button id="htmlPreviewModalCloseButton" class="p-1 rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-700">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="p-6 flex-grow overflow-y-auto bg-gray-100">
+                <iframe id="htmlPreviewFrame" class="w-full h-full min-h-[600px] bg-white rounded border border-gray-300" frameborder="0"></iframe>
+            </div>
+            <div class="p-4 bg-gray-50 border-t rounded-b-2xl flex gap-2">
+                <button id="htmlPreviewCopyButton" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 flex items-center justify-center gap-2 text-sm">
+                    <i data-lucide="copy" class="w-4 h-4"></i> Copy HTML Code
+                </button>
+                <button id="htmlPreviewDownloadButton" class="flex-1 px-4 py-2 bg-[#DC0028] text-white rounded-lg font-semibold hover:bg-[#DC0028]/90 flex items-center justify-center gap-2 text-sm">
+                    <i data-lucide="download" class="w-4 h-4"></i> Download HTML
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Feedback -->
+    <div id="feedbackModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg">
+            <div class="flex justify-between items-center p-4 border-b">
+                <h3 class="text-lg font-bold flex items-center gap-2"><i data-lucide="message-circle" class="w-5 h-5 text-[#DC0028]"></i> Share Your Feedback</h3>
+                <button id="feedbackModalCloseButton" class="p-1 rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-700">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-6">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-3">
+                        How likely are you to recommend this tool? (0-10)
+                    </label>
+                    <div class="flex items-center gap-4">
+                        <input type="range" id="npsRating" min="0" max="10" value="8" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" style="accent-color: #DC0028;">
+                        <span id="npsRatingValue" class="text-2xl font-bold text-[#DC0028] w-12 text-center">8</span>
+                    </div>
+                    <div class="flex justify-between text-xs text-gray-500 mt-2">
+                        <span>Not likely</span>
+                        <span>Very likely</span>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="feedbackComment" class="block text-sm font-semibold text-gray-700 mb-2">
+                        Additional comments (optional)
+                    </label>
+                    <textarea id="feedbackComment" placeholder="What did you like? What could be improved?" class="w-full h-24 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC0028] outline-none resize-y"></textarea>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="sendToEmail" class="w-4 h-4 text-[#DC0028] border-gray-300 rounded focus:ring-[#DC0028]">
+                    <label for="sendToEmail" class="text-sm text-gray-700">
+                        Send feedback with generated output to <strong>author</strong>
+                    </label>
+                </div>
+
+                <div id="feedbackSuccess" class="hidden p-4 bg-green-50 border border-green-200 rounded-lg text-center">
+                    <div class="flex flex-col items-center gap-3">
+                        <img id="feedbackGif" src="https://media.giphy.com/media/KJ1f5iTl4Oo7u/giphy.gif" alt="Thank you!" class="w-48 h-48 object-cover rounded-lg" onerror="this.style.display='none'">
+                        <div class="flex items-center gap-2 text-green-700 text-sm font-semibold">
+                            <i data-lucide="check-circle" class="w-4 h-4"></i>
+                            <span>✓ Feedback saved locally - Thank you!</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 bg-gray-50 border-t rounded-b-2xl flex gap-2">
+                <button id="feedbackCancelButton" class="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 flex items-center justify-center gap-2 text-sm">
+                    Cancel
+                </button>
+                <button id="feedbackSubmitButton" class="flex-1 px-4 py-2 bg-[#DC0028] text-white rounded-lg font-semibold hover:bg-[#DC0028]/90 flex items-center justify-center gap-2 text-sm">
+                    <i data-lucide="send" class="w-4 h-4"></i> Submit Feedback
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal konfiguracji API Key -->
     <div id="apiKeyModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50 transition-opacity duration-300">
         <div class="bg-white rounded-2xl shadow-xl w-full max-w-md">
@@ -161,12 +272,12 @@
                     <p class="text-sm text-gray-600 mb-4">Enter your Google Gemini API key to enable content generation. Your key is stored locally in your browser.</p>
                     <div class="space-y-2">
                         <label class="text-sm font-semibold text-gray-700">API Key:</label>
-                        <input type="password" id="apiKeyInput" placeholder="Enter your Gemini API key..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003C5C] outline-none">
+                        <input type="password" id="apiKeyInput" placeholder="Enter your Gemini API key..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC0028] outline-none">
                         <p class="text-xs text-gray-500">Get your key from: <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-blue-600 hover:underline">Google AI Studio</a></p>
                     </div>
                 </div>
                 <div class="flex gap-2">
-                    <button id="apiKeySaveButton" class="flex-1 px-4 py-2 bg-[#003C5C] text-white rounded-lg font-semibold hover:bg-[#003C5C]/90 flex items-center justify-center gap-2">
+                    <button id="apiKeySaveButton" class="flex-1 px-4 py-2 bg-[#DC0028] text-white rounded-lg font-semibold hover:bg-[#DC0028]/90 flex items-center justify-center gap-2">
                         <i data-lucide="save" class="w-4 h-4"></i> Save Key
                     </button>
                     <button id="apiKeyClearButton" class="px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 flex items-center justify-center gap-2">
@@ -230,15 +341,18 @@
             sourceUrl: '',
             sourceText: '',
             sourceFile: null, // { name: string, content: string }
+            brandAudience: 'existing clients', // Default audience
+            brandAudienceCustom: '',
             selectedLanguages: ['EN', 'DE', 'NL', 'FR'],
             isProcessing: false,
             languageStatus: null, // Record<LangCode, { status: 'idle' | 'processing' | 'success' | 'error', error?: string }>
             generatedContent: null, // Record<LangCode, EmailContent>
-            alternativeSubjects: {}, // Record<LangCode, string[]>
-            bodyRefineLoading: null, // LangCode | null
-            subjectLineLoading: null, // LangCode | null
             isCancelledRef: false,
-            assetGenerationLoading: null // Śledzi ładowanie zasobów
+            assetGenerationLoading: null, // Śledzi ładowanie zasobów
+            outputFormat: 'html', // 'html' | 'json' | 'csv' - DEFAULT: HTML
+            generatedHTML: {}, // Record<LangCode, string> - HTML emails
+            estimatedTime: 0, // Estimated generation time in seconds
+            startTime: null // Generation start timestamp
         };
 
         // --- REFERENCJE DO DOM ---
@@ -254,6 +368,8 @@
             sourceFileInput: document.getElementById('sourceFile'),
             fileLabel: document.getElementById('file-label'),
             fileName: document.getElementById('file-name'),
+            brandAudienceSelect: document.getElementById('brandAudience'),
+            brandAudienceCustom: document.getElementById('brandAudienceCustom'),
             languageSelector: document.getElementById('language-selector'),
             generateButton: document.getElementById('generateButton'),
             cancelButton: document.getElementById('cancelButton'),
@@ -328,11 +444,62 @@
             dom.generateButton.disabled = !isReady || state.isProcessing;
         }
 
-        const getBasePrompt = (languageName) => {
+        const getBasePrompt = (languageName, isHTML = false) => {
             const sourceContent = getSourceContent();
             const sourceIdentifier = state.inputType === 'url' ? `the article at ${sourceContent}` : `the following text`;
             const sourceData = state.inputType !== 'url' ? `\n\n---SOURCE TEXT---\n${sourceContent}\n---END SOURCE TEXT---` : '';
-            return `Based on ${sourceIdentifier}, generate professional email content in ${languageName} specifically for **current clients**.
+
+            // Get audience context
+            const audience = state.brandAudience === 'other' && state.brandAudienceCustom
+                ? state.brandAudienceCustom
+                : state.brandAudience;
+            const audienceContext = `\n\nTARGET AUDIENCE: ${audience}. Tailor the tone, formality, and message relevance accordingly.`;
+
+            if (isHTML) {
+                return `Based on ${sourceIdentifier}, generate a complete responsive HTML email for Atradius Collections in ${languageName}.${audienceContext}
+
+CRITICAL: Output ONLY clean HTML code. No markdown, no comments, no explanations. Just pure HTML.
+
+Extract any images from the source and use their full URLs (https://...). If no images found, use https://via.placeholder.com/600x200.
+
+Use this exact structure (table-based responsive email):
+- Outer table: width="100%" bgcolor="#F2F2F2"
+- Inner table: max-width:600px, margin:0 auto, bgcolor="#ffffff"
+- All CSS must be INLINE (no <style> in <head>)
+- Use Atradius Collections branding: #DC0028 (red), #505050 (text), #BFBFBF (grey)
+- Include: logo area, hero image, main content (150-200 words), CTA button (#DC0028), footer
+- Button style: background-color:#DC0028; color:#fff; padding:10px 20px; border-radius:2px;
+- Maintain proper spacing with padding in <td> elements
+- Use font-family: Arial, Helvetica, sans-serif
+- Add alt text to all images
+- Include MSO conditional comments for Outlook compatibility
+
+BRAND VOICE (apply to all text):
+- CLEAR: Simple language, active voice, sentences under 18 words
+- CONFIDENT: Strong, direct, no ambiguity
+- HELPFUL: Focus on reader benefit, warm and professional
+
+CRITICAL RULES FOR CONTENT:
+- NO PLACEHOLDERS: Never use [Company Name], [Your Name], [Link], or any bracketed text
+- Use real content from the source material
+- Lead with customer benefits, be specific and concrete
+- Use warm, professional tone - like a conversation with a business contact
+- AVOID absolute/categorical statements like "gives a clear picture", "complete clarity", "the only solution"
+- Use nuanced language: "can help", "tends to", "often shows", "may improve", "suggests"
+
+Generate the complete HTML structure with:
+1. Header with Atradius Collections logo (use real logo URL: https://image.e.atradius.com/EloquaImages/clients/atradiuscollections/{0529efc5-58fd-4150-8e3b-74c3440d5d6d}_AC-Logo-Color-50px.png)
+2. Hero image (extract from source or use: https://via.placeholder.com/600x200)
+3. Main headline (compelling, max 15 words, sentence case)
+4. Body content (150-200 words, present insights naturally, use nuanced language)
+5. At the END of body, add a "Key insights:" section with 2-3 bullet points (checkmarks ✔️)
+6. CTA button (actionable, max 5 words)
+7. Footer with unsubscribe link
+
+Output ONLY the HTML code, starting with <!DOCTYPE html>.${sourceData}`;
+            }
+
+            return `Based on ${sourceIdentifier}, generate professional email content in ${languageName}.${audienceContext}
 
 BRAND VOICE GUIDELINES (CRITICAL - MUST FOLLOW):
 You must embody these three core qualities in ALL content:
@@ -352,19 +519,31 @@ WRITING STYLE RULES:
 - Lead with customer benefits, not company features
 - Include people and human elements where possible
 - Be specific and concrete, avoid ambiguity
+- NEVER use placeholders like [Company Name], [Link], [Your Name] - always use real content
+- AVOID absolute/categorical statements like "It gives a clear picture", "This provides complete clarity", "It's the only solution"
+- Use nuanced language: "can help", "tends to", "often shows", "may improve", "suggests", "indicates"
+- Present data and trends, let the reader draw conclusions
 
 Please create:
-1. A compelling, client-focused subject line (max 15 words). Be clear, confident, and focus on the reader benefit.
+1. A compelling, client-focused subject line (max 15 words). Use sentence case - only capitalize the first word and proper nouns. Be clear, confident, and focus on the reader benefit.
+
 2. A short, engaging preheader (max 20 words) that appears after the subject line. Make it helpful and intriguing.
+
 3. A professional email body (approx. 150-200 words). Structure it with:
    - An engaging opening that acknowledges our partnership
-   - 2-3 key insights relevant to their business (be helpful and clear)
+   - Main content presenting insights and data from the source material
+   - Use nuanced language - avoid absolute statements
    - A clear call-to-action (be confident and direct)
+   - At the END of the body, add: "\\n\\nKey insights:\\n" followed by 2-3 bullet points (use • as bullets)
+   - Each bullet should be a concise, specific insight (one line each)
    - Use '\\n' for new paragraphs to ensure proper formatting
    - Keep sentences varied in length but aim for under 18 words
    - Use warm, professional language - imagine a conversation with a business contact
+   - Balance "you/your" with "we/our" naturally - focus on the relationship and shared success
+
 4. A short, actionable call-to-action text (max 5 words). Be confident and direct.
-5. Key insights: 2-3 clear, actionable insights that demonstrate our expertise while being helpful.
+
+5. Key insights: 2-3 clear, specific insights from the source material. These should match the bullet points at the end of the email body.
 
 Remember: Be CLEAR (simple language), CONFIDENT (strong and direct), HELPFUL (focused on the reader's needs).
 
@@ -372,6 +551,44 @@ Format the entire response as a single, clean JSON object, with no surrounding t
         };
 
         // --- LOGIKA API GEMINI ---
+
+        async function callGeminiForHTML(prompt) {
+            const apiKey = getApiKey();
+            if (!apiKey) throw new Error("API key not configured");
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    responseMimeType: "text/plain"
+                }
+            };
+
+            let attempts = 0;
+            while (attempts < 3) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+                    const result = await response.json();
+                    const candidate = result.candidates?.[0];
+                    const htmlContent = candidate?.content?.parts?.[0]?.text;
+                    if (htmlContent) {
+                        return htmlContent;
+                    } else {
+                        throw new Error("Invalid API response structure");
+                    }
+                } catch (error) {
+                    attempts++;
+                    console.error(`Attempt ${attempts} failed:`, error);
+                    if (attempts >= 3) throw error;
+                    await sleep(1000 * attempts);
+                }
+            }
+            throw new Error("API call failed after multiple retries.");
+        }
 
         async function callGeminiApi(prompt) {
             const apiKey = getApiKey();
@@ -423,89 +640,6 @@ Format the entire response as a single, clean JSON object, with no surrounding t
             throw new Error("API call failed after multiple retries.");
         }
 
-        async function callGeminiForSubjectVariations(prompt) {
-            const apiKey = getApiKey();
-            if (!apiKey) throw new Error("API key not configured");
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-            const payload = {
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: {
-                    responseMimeType: "application/json",
-                    responseSchema: { type: "ARRAY", items: { type: "STRING" } }
-                }
-            };
-
-            let attempts = 0;
-            while (attempts < 3) {
-                try {
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                    if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
-                    const result = await response.json();
-                    const candidate = result.candidates?.[0];
-                    const contentText = candidate?.content?.parts?.[0]?.text;
-                    if (contentText) {
-                        const parsedJson = JSON.parse(contentText);
-                        return Array.isArray(parsedJson) ? parsedJson : [];
-                    } else {
-                        throw new Error("Invalid API response structure");
-                    }
-                } catch (error) {
-                    attempts++;
-                    console.error(`Attempt ${attempts} failed:`, error);
-                    if (attempts >= 3) throw error;
-                    await sleep(1000 * attempts);
-                }
-            }
-            throw new Error("API call failed after multiple retries.");
-        }
-
-        async function callGeminiForRewrite(prompt) {
-            const apiKey = getApiKey();
-            if (!apiKey) throw new Error("API key not configured");
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-            const payload = {
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: "OBJECT",
-                        properties: { rewrittenBody: { type: "STRING" } },
-                        required: ["rewrittenBody"]
-                    }
-                }
-            };
-
-            let attempts = 0;
-            while (attempts < 3) {
-                try {
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                    if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
-                    const result = await response.json();
-                    const candidate = result.candidates?.[0];
-                    const contentText = candidate?.content?.parts?.[0]?.text;
-                    if (contentText) {
-                        const parsedJson = JSON.parse(contentText);
-                        return parsedJson.rewrittenBody || "";
-                    } else {
-                        throw new Error("Invalid API response structure");
-                    }
-                } catch (error) {
-                    attempts++;
-                    console.error(`Attempt ${attempts} failed:`, error);
-                    if (attempts >= 3) throw error;
-                    await sleep(1000 * attempts);
-                }
-            }
-            throw new Error("API call failed after multiple retries.");
-        }
 
         async function callGeminiForAssets(prompt) {
             const apiKey = getApiKey();
@@ -624,7 +758,13 @@ Format the entire response as a single, clean JSON object, with no surrounding t
             state.isProcessing = true;
             state.isCancelledRef = false;
             state.generatedContent = {};
-            state.alternativeSubjects = {};
+            state.generatedHTML = {};
+            state.startTime = Date.now();
+
+            // Calculate estimated time - more realistic (30-35 seconds per language for HTML, 15-20 for JSON)
+            const timePerLang = state.outputFormat === 'html' ? 32 : 18;
+            state.estimatedTime = state.selectedLanguages.length * timePerLang;
+
             updateButtons();
 
             const initialStatus = state.selectedLanguages.reduce((acc, lang) => {
@@ -635,14 +775,33 @@ Format the entire response as a single, clean JSON object, with no surrounding t
 
             renderResults(); // Pokaż szkielety kart
 
+            // Start timer to update estimated time
+            const timerInterval = setInterval(() => {
+                if (!state.isProcessing) {
+                    clearInterval(timerInterval);
+                    return;
+                }
+                updateButtons();
+            }, 1000);
+
             const processLanguage = async (langCode) => {
                 if (state.isCancelledRef) return;
                 try {
-                    const prompt = getBasePrompt(LANGUAGES[langCode].name);
+                    // Generate JSON content
+                    const prompt = getBasePrompt(LANGUAGES[langCode].name, false);
                     const content = await callGeminiApi(prompt);
                     if (state.isCancelledRef) return;
 
                     state.generatedContent[langCode] = content;
+
+                    // If HTML format selected, also generate HTML
+                    if (state.outputFormat === 'html') {
+                        const htmlPrompt = getBasePrompt(LANGUAGES[langCode].name, true);
+                        const htmlContent = await callGeminiForHTML(htmlPrompt);
+                        if (state.isCancelledRef) return;
+                        state.generatedHTML[langCode] = htmlContent;
+                    }
+
                     state.languageStatus[langCode] = { status: 'success' };
                     renderCardContent(langCode); // Zaktualizuj konkretną kartę
                 } catch (error) {
@@ -700,92 +859,11 @@ Format the entire response as a single, clean JSON object, with no surrounding t
                 const textarea = document.querySelector(`#card-${langCode} textarea`);
                 if(textarea) {
                     textarea.classList.add('border-red-400', 'focus:ring-red-400');
-                    textarea.classList.remove('border-gray-300', 'focus:ring-[#003C5C]');
+                    textarea.classList.remove('border-gray-300', 'focus:ring-[#DC0028]');
                 }
             }
         }
 
-        async function handleGenerateSubjectVariations(langCode) {
-            const content = state.generatedContent?.[langCode];
-            if (!content) return;
-
-            state.subjectLineLoading = langCode;
-            renderCardContent(langCode); // Zaktualizuj UI, aby pokazać ładowanie
-
-            const prompt = `Based on the following email subject and body, generate 3 compelling alternative subject lines for A/B testing.
-
-BRAND VOICE - MUST FOLLOW:
-- CLEAR: Simple, straightforward language. Avoid jargon. Keep under 15 words.
-- CONFIDENT: Strong, direct words. No ambiguity. Use active voice.
-- HELPFUL: Focus on reader benefit, not just features. Make it about them.
-
-STYLE RULES:
-- Use British English spelling
-- Use contractions naturally (we're, you'll, it's)
-- Lead with customer benefit
-- Be specific and concrete
-- Avoid formal, old-fashioned language
-
-Generate 3 distinct variations that test different angles (benefit-focused, urgency-driven, curiosity-based).
-
-Respond as a simple JSON array of strings. e.g., ["Subject variation 1", "Subject variation 2", "Subject variation 3"]
-
-Original Subject: ${content.subject}
-Email Body: ${content.body}`;
-
-            try {
-                const variations = await callGeminiForSubjectVariations(prompt);
-                state.alternativeSubjects[langCode] = variations;
-            } catch (error) {
-                console.error("Failed to generate subject variations:", error);
-            } finally {
-                state.subjectLineLoading = null;
-                renderCardContent(langCode); // Zrenderuj nowe wariacje
-            }
-        }
-
-        async function handleRefineBody(langCode, tone) {
-            const content = state.generatedContent?.[langCode];
-            if (!content) return;
-
-            state.bodyRefineLoading = langCode;
-            renderCardContent(langCode); // Pokaż ładowanie
-
-            const prompt = `Rewrite the following email body to be ${tone}, while strictly maintaining our brand voice.
-
-BRAND VOICE - CRITICAL TO MAINTAIN:
-- CLEAR: Simple, straightforward language. Avoid jargon. Keep sentences under 18 words. Use active voice.
-- CONFIDENT: Strong, direct words. Be assertive but not boastful. Use dynamic language.
-- HELPFUL: Focus on reader needs and benefits. Be warm and human.
-
-STYLE RULES:
-- Use British English spelling and grammar
-- Use contractions (we're, you'll, it's) for warmth
-- Use active voice ("We help you" NOT "You are helped")
-- Avoid jargon and complicated terminology
-- Lead with customer benefits
-- Be specific and concrete
-
-Adjust the tone to be ${tone} while keeping all brand voice qualities intact.
-Use '\\n' for paragraph breaks.
-
-Respond with a single JSON object: {"rewrittenBody": "..."}
-
-Original Body:
-${content.body}`;
-
-            try {
-                const rewrittenBody = await callGeminiForRewrite(prompt);
-                if (rewrittenBody) {
-                    state.generatedContent[langCode].body = rewrittenBody;
-                }
-            } catch (error) {
-                console.error(`Failed to refine body for ${langCode}:`, error);
-            } finally {
-                state.bodyRefineLoading = null;
-                renderCardContent(langCode); // Zrenderuj nową treść
-            }
-        }
 
         async function handleGenerateAssets(langCode) {
             const content = state.generatedContent?.[langCode];
@@ -973,6 +1051,145 @@ ${content.body}`;
             });
         }
 
+        // --- FUNKCJE ZARZĄDZANIA HTML PREVIEW MODAL ---
+
+        let currentPreviewHTML = '';
+        let currentPreviewLangCode = '';
+
+        function showHTMLPreview(langCode) {
+            const htmlContent = state.generatedHTML[langCode];
+            if (!htmlContent) return;
+
+            currentPreviewHTML = htmlContent;
+            currentPreviewLangCode = langCode;
+
+            const modal = document.getElementById('htmlPreviewModal');
+            const iframe = document.getElementById('htmlPreviewFrame');
+
+            // Load HTML into iframe
+            iframe.srcdoc = htmlContent;
+
+            modal.classList.remove('hidden');
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+
+        function hideHTMLPreview() {
+            const modal = document.getElementById('htmlPreviewModal');
+            modal.classList.add('hidden');
+            currentPreviewHTML = '';
+            currentPreviewLangCode = '';
+        }
+
+        function copyHTMLCode() {
+            if (!currentPreviewHTML) return;
+            safeClipboardCopy(currentPreviewHTML, () => {
+                const btn = document.getElementById('htmlPreviewCopyButton');
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = '<i data-lucide="check-circle" class="w-4 h-4"></i> Copied!';
+                btn.classList.add('bg-green-600', 'hover:bg-green-700');
+                btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                    btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                    btn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                }, 2000);
+            });
+        }
+
+        function downloadHTMLFromPreview() {
+            if (!currentPreviewHTML || !currentPreviewLangCode) return;
+            const blob = new Blob([currentPreviewHTML], { type: 'text/html;charset=utf-8' });
+            const filename = `atradius-email-${currentPreviewLangCode.toLowerCase()}.html`;
+            downloadBlob(blob, filename);
+        }
+
+        // --- FUNKCJE ZARZĄDZANIA FEEDBACK MODAL ---
+
+        function showFeedbackModal() {
+            const modal = document.getElementById('feedbackModal');
+            document.getElementById('feedbackSuccess').classList.add('hidden');
+            document.getElementById('feedbackComment').value = '';
+            document.getElementById('sendToEmail').checked = false;
+            modal.classList.remove('hidden');
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+
+        function hideFeedbackModal() {
+            const modal = document.getElementById('feedbackModal');
+            modal.classList.add('hidden');
+        }
+
+        async function submitFeedback() {
+            const rating = document.getElementById('npsRating').value;
+            const comment = document.getElementById('feedbackComment').value;
+            const sendEmail = document.getElementById('sendToEmail').checked;
+
+            const feedback = {
+                rating: parseInt(rating),
+                comment: comment,
+                timestamp: new Date().toISOString(),
+                generatedContent: state.generatedContent,
+                selectedLanguages: state.selectedLanguages,
+                outputFormat: state.outputFormat
+            };
+
+            // Save locally
+            const existingFeedback = JSON.parse(localStorage.getItem('eloqua_feedback') || '[]');
+            existingFeedback.push(feedback);
+            localStorage.setItem('eloqua_feedback', JSON.stringify(existingFeedback));
+
+            // Show success message
+            document.getElementById('feedbackSuccess').classList.remove('hidden');
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+
+            // Send email if checkbox is checked
+            if (sendEmail) {
+                await sendFeedbackEmail(feedback);
+            }
+
+            // Close modal after 8 seconds to show the GIF
+            setTimeout(() => {
+                hideFeedbackModal();
+            }, 8000);
+        }
+
+        async function sendFeedbackEmail(feedback) {
+            const emailBody = `
+NPS Rating: ${feedback.rating}/10
+
+Comment:
+${feedback.comment || 'No comment provided'}
+
+---
+Generated Output:
+${JSON.stringify(feedback.generatedContent, null, 2)}
+
+Languages: ${feedback.selectedLanguages.join(', ')}
+Format: ${feedback.outputFormat}
+Timestamp: ${feedback.timestamp}
+            `.trim();
+
+            // Create mailto link
+            const subject = encodeURIComponent(`Eloqua Generator Feedback - NPS ${feedback.rating}`);
+            const body = encodeURIComponent(emailBody);
+            const mailtoLink = `mailto:kamil.blasiak@atradius.com?subject=${subject}&body=${body}`;
+
+            // Open default email client
+            window.location.href = mailtoLink;
+        }
+
         // --- FUNKCJE ZARZĄDZANIA API KEY MODAL ---
 
         function showApiKeyModal() {
@@ -1031,12 +1248,12 @@ ${content.body}`;
                         }, 2000);
                     }
                 });
-            } else if (action === 'suggest-subjects') {
-                handleGenerateSubjectVariations(lang);
-            } else if (action === 'refine-body') {
-                handleRefineBody(lang, tone);
             } else if (action === 'generate-assets') {
                 handleGenerateAssets(lang);
+            } else if (action === 'preview-html') {
+                showHTMLPreview(lang);
+            } else if (action === 'share-feedback') {
+                showFeedbackModal();
             }
         }
 
@@ -1053,20 +1270,28 @@ ${content.body}`;
 
         function exportData(format) {
             if (!state.generatedContent) return;
-            const data = Object.entries(state.generatedContent).map(([lang, content]) => ({
-                language_code: lang,
-                language_name: LANGUAGES[lang].name,
-                subject: content.subject,
-                preheader: content.preheader,
-                body: content.body,
-                cta: content.cta,
-                key_insights: content.keyInsights.join('; ')
-            }));
+
             if (format === 'json') {
+                const data = Object.entries(state.generatedContent).map(([lang, content]) => ({
+                    language_code: lang,
+                    language_name: LANGUAGES[lang].name,
+                    subject: content.subject,
+                    preheader: content.preheader,
+                    body: content.body,
+                    cta: content.cta,
+                    key_insights: content.keyInsights.join('; ')
+                }));
                 downloadBlob(new Blob([JSON.stringify(data, null, 2)], { type: "application/json;charset=utf-8" }), 'eloqua-content.json');
-            } else {
+            } else if (format === 'csv') {
+                // CSV format: język, tytuł (subject), opis (body), CTA
+                const data = Object.entries(state.generatedContent).map(([lang, content]) => ({
+                    language: LANGUAGES[lang].name,
+                    subject: content.subject,
+                    body: content.body,
+                    cta: content.cta
+                }));
                 const header = Object.keys(data[0]).join(',');
-                const rows = data.map(row => Object.values(row).map(val => `"${String(val).replace(/"/g, '""')}"`).join(','));
+                const rows = data.map(row => Object.values(row).map(val => `"${String(val).replace(/"/g, '""').replace(/\n/g, ' ')}"`).join(','));
                 downloadBlob(new Blob([`${header}\n${rows.join('\n')}`], { type: "text/csv;charset=utf-8" }), 'eloqua-content.csv');
             }
         }
@@ -1076,7 +1301,7 @@ ${content.body}`;
         function renderLanguageSelector() {
             dom.languageSelector.innerHTML = Object.entries(LANGUAGES).map(([code, lang]) => `
                 <button
-                    class="p-3 rounded-lg border-2 text-center transition-all ${state.selectedLanguages.includes(code) ? 'border-[#003C5C] bg-blue-50' : 'border-gray-200 hover:border-gray-300'}"
+                    class="p-3 rounded-lg border-2 text-center transition-all ${state.selectedLanguages.includes(code) ? 'border-[#DC0028] bg-red-50' : 'border-gray-200 hover:border-gray-300'}"
                     data-lang="${code}"
                 >
                     <span class="text-3xl" role="img" aria-label="${lang.name}">${lang.flag}</span>
@@ -1094,6 +1319,22 @@ ${content.body}`;
         function updateButtons() {
             dom.generateButton.classList.toggle('hidden', state.isProcessing);
             dom.cancelButton.classList.toggle('hidden', !state.isProcessing);
+
+            const estimatedTimeEl = document.getElementById('estimatedTime');
+            const estimatedTimeText = document.getElementById('estimatedTimeText');
+
+            if (state.isProcessing && state.estimatedTime > 0) {
+                const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+                const remaining = Math.max(0, state.estimatedTime - elapsed);
+                estimatedTimeText.textContent = `Estimated time: ~${remaining}s remaining`;
+                estimatedTimeEl.classList.remove('hidden');
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            } else {
+                estimatedTimeEl.classList.add('hidden');
+            }
+
             checkReadiness();
         }
 
@@ -1122,7 +1363,7 @@ ${content.body}`;
             // Aktualizacja statusu
             let statusIcon = '';
             if (status.status === 'processing') {
-                statusIcon = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin text-[#003C5C]"></i>';
+                statusIcon = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin text-[#DC0028]"></i>';
             } else if (status.status === 'success' && content) {
                 statusIcon = '<i data-lucide="check-circle" class="w-5 h-5 text-green-500"></i>';
             } else if (status.status === 'error') {
@@ -1132,62 +1373,20 @@ ${content.body}`;
 
             // Aktualizacja treści
             if (content) {
-                const variations = state.alternativeSubjects[langCode] || [];
                 const insights = content.keyInsights || [];
 
                 contentContainer.innerHTML = `
                     <div class="space-y-3">
                         <div class="flex items-center justify-between pt-2"><strong class="text-sm">Subject:</strong>
-                            <div class="flex items-center gap-2">
-                                <button
-                                    class="p-1 text-xs text-blue-600 hover:bg-blue-50 rounded-md flex items-center gap-1 transition-colors disabled:opacity-50 disabled:cursor-wait"
-                                    data-action="suggest-subjects"
-                                    data-lang="${langCode}"
-                                    ${state.subjectLineLoading === langCode ? 'disabled' : ''}
-                                >
-                                    ${state.subjectLineLoading === langCode
-                                        ? '<i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i>'
-                                        : '<i data-lucide="sparkles" class="w-3 h-3"></i>'}
-                                    ✨ Suggest Variations
-                                </button>
-                                ${createCopyButton(content.subject)}
-                            </div>
+                            ${createCopyButton(content.subject)}
                         </div>
                         <p class="p-2 bg-yellow-50 text-sm rounded">${content.subject}</p>
-
-                        ${variations.length > 0 ? `
-                            <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
-                                <h4 class="text-sm font-semibold text-blue-800 flex items-center gap-1.5"><i data-lucide="sparkles" class="w-3 h-3"></i> Subject Variations</h4>
-                                <ul class="list-disc list-inside pl-2 space-y-1">
-                                    ${variations.map(subject => `
-                                        <li class="text-sm text-gray-700 flex justify-between items-center group">
-                                            <span>${subject}</span>
-                                            <span class="opacity-0 group-hover:opacity-100 transition-opacity">
-                                                ${createCopyButton(subject)}
-                                            </span>
-                                        </li>
-                                    `).join('')}
-                                </ul>
-                            </div>
-                        ` : ''}
 
                         <div class="flex items-center justify-between pt-2"><strong class="text-sm">Preheader:</strong> ${createCopyButton(content.preheader)}</div>
                         <p class="p-2 bg-blue-50 text-sm rounded">${content.preheader}</p>
 
                         <div class="flex items-center justify-between pt-2"><strong class="text-sm">Body:</strong>
-                            <div class="flex items-center gap-2">
-                                ${state.bodyRefineLoading === langCode
-                                    ? '<i data-lucide="loader-2" class="w-4 h-4 animate-spin text-blue-600"></i>'
-                                    : `
-                                    <div class="flex items-center gap-1 text-xs text-blue-600" title="Refine body content">
-                                        <i data-lucide="sparkles" class="w-3 h-3"></i>
-                                        <span>Refine:</span>
-                                        <button class="p-1 hover:bg-blue-50 rounded-md font-semibold" data-action="refine-body" data-lang="${langCode}" data-tone="more formal">Formal</button>
-                                        <button class="p-1 hover:bg-blue-50 rounded-md font-semibold" data-action="refine-body" data-lang="${langCode}" data-tone="more concise">Concise</button>
-                                    </div>
-                                `}
-                                ${createCopyButton(content.body)}
-                            </div>
+                            ${createCopyButton(content.body)}
                         </div>
                         <p class="p-2 bg-gray-50 text-sm rounded whitespace-pre-wrap">${content.body.replace(/\\n/g, '\n')}</p>
 
@@ -1201,8 +1400,24 @@ ${content.body}`;
                         <div class="flex items-center justify-between pt-2"><strong class="text-sm">CTA:</strong> ${createCopyButton(content.cta)}</div>
                         <p class="p-2 bg-green-50 text-sm rounded">${content.cta}</p>
 
-                        <!-- SEKCJA: Przycisk generowania zasobów -->
-                        <div class="pt-4 border-t mt-4">
+                        <!-- SEKCJA: Przyciski akcji -->
+                        <div class="pt-4 border-t mt-4 space-y-2">
+                            ${state.generatedHTML[langCode] ? `
+                            <button
+                                class="w-full px-4 py-2 bg-[#DC0028] text-white rounded-lg font-semibold hover:bg-[#DC0028]/90 flex items-center justify-center gap-2 text-sm"
+                                data-action="preview-html"
+                                data-lang="${langCode}"
+                            >
+                                <i data-lucide="monitor" class="w-4 h-4"></i> 📧 Preview HTML Email
+                            </button>
+                            ` : ''}
+                            <button
+                                class="w-full px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 flex items-center justify-center gap-2 text-sm"
+                                data-action="share-feedback"
+                                data-lang="${langCode}"
+                            >
+                                <i data-lucide="message-circle" class="w-4 h-4"></i> 💬 Share Feedback
+                            </button>
                             <button
                                 class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 flex items-center justify-center gap-2 text-sm disabled:bg-blue-300 disabled:cursor-wait"
                                 data-action="generate-assets"
@@ -1211,7 +1426,7 @@ ${content.body}`;
                             >
                                 ${state.assetGenerationLoading === langCode
                                     ? '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Generating...'
-                                    : '<i data-lucide="package-plus" class="w-4 h-4"></i> ✨ Generate Campaign Assets'
+                                    : '<i data-lucide="sparkles" class="w-4 h-4"></i> ✨ Generate Campaign Assets'
                                 }
                             </button>
                         </div>
@@ -1228,7 +1443,7 @@ ${content.body}`;
                     </div>
                     <textarea
                         placeholder="...paste a valid JSON reply for ${LANGUAGES[langCode].name} here."
-                        class="w-full h-24 p-2 border rounded-lg text-sm font-mono focus:ring-2 outline-none resize-y ${status.status === 'error' ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-[#003C5C]'}"
+                        class="w-full h-24 p-2 border rounded-lg text-sm font-mono focus:ring-2 outline-none resize-y ${status.status === 'error' ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-[#DC0028]'}"
                         data-lang="${langCode}"
                     ></textarea>
                 `;
@@ -1245,6 +1460,22 @@ ${content.body}`;
             }
         }
 
+        function switchOutputFormat(format) {
+            state.outputFormat = format;
+            renderResults(); // Re-render to show/hide Export HTML button
+        }
+
+        function exportHTML() {
+            if (!state.generatedHTML || Object.keys(state.generatedHTML).length === 0) return;
+
+            // Create a ZIP-like download or individual files
+            Object.entries(state.generatedHTML).forEach(([langCode, htmlContent]) => {
+                const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+                const filename = `atradius-email-${langCode.toLowerCase()}.html`;
+                downloadBlob(blob, filename);
+            });
+        }
+
         function renderResults() {
             if (!state.languageStatus) {
                 dom.resultsContainer.innerHTML = '';
@@ -1253,15 +1484,28 @@ ${content.body}`;
 
             // Tworzenie nagłówka z przyciskami eksportu
             const hasSuccess = Object.values(state.languageStatus).some(s => s.status === 'success');
+            const isProcessingAny = Object.values(state.languageStatus).some(s => s.status === 'processing');
+            const hasHTML = state.outputFormat === 'html' && Object.keys(state.generatedHTML).length > 0;
             const headerHTML = `
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-6">
                     <div class="flex flex-wrap justify-between items-center gap-4">
-                        <h2 class="text-xl font-bold flex items-center gap-3"><span class="bg-[#003C5C] text-white rounded-full h-8 w-8 flex items-center justify-center font-bold">3</span> Review & Export</h2>
+                        <h2 class="text-xl font-bold flex items-center gap-3"><span class="bg-[#DC0028] text-white rounded-full h-8 w-8 flex items-center justify-center font-bold">3</span> Review & Export</h2>
                         <div class="flex flex-wrap gap-2">
-                            <!-- ✨ NOWY PRZYCISK: Wyślij E-mailem -->
+                            <!-- Format Selector -->
+                            <div class="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                                <button id="formatJSON" class="px-3 py-1.5 text-xs font-semibold rounded ${state.outputFormat === 'json' ? 'bg-white shadow' : 'text-gray-600'}" data-format="json">JSON</button>
+                                <button id="formatHTML" class="px-3 py-1.5 text-xs font-semibold rounded ${state.outputFormat === 'html' ? 'bg-white shadow' : 'text-gray-600'}" data-format="html">HTML</button>
+                                <button id="formatCSV" class="px-3 py-1.5 text-xs font-semibold rounded ${state.outputFormat === 'csv' ? 'bg-white shadow' : 'text-gray-600'}" data-format="csv">CSV</button>
+                            </div>
+                            <!-- Export Buttons -->
                             <button id="emailResultsButton" ${!hasSuccess ? 'disabled' : ''} class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 text-sm disabled:bg-gray-300">
                                 <i data-lucide="mail" class="w-4 h-4"></i> Send by E-mail
                             </button>
+                            ${hasHTML ? `
+                            <button id="exportHTML" class="px-4 py-2 bg-[#DC0028] text-white rounded-lg hover:bg-[#DC0028]/90 flex items-center gap-2 text-sm">
+                                <i data-lucide="code" class="w-4 h-4"></i> Export HTML
+                            </button>
+                            ` : ''}
                             <button id="exportJson" ${!hasSuccess ? 'disabled' : ''} class="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 flex items-center gap-2 text-sm disabled:bg-gray-300">
                                 <i data-lucide="download" class="w-4 h-4"></i> Export JSON
                             </button>
@@ -1298,6 +1542,15 @@ ${content.body}`;
             document.getElementById('exportCsv').addEventListener('click', () => exportData('csv'));
             // ✨ NOWY LISTENER: Przycisk e-maila
             document.getElementById('emailResultsButton').addEventListener('click', showEmailModal);
+            // Format selectors
+            document.getElementById('formatJSON').addEventListener('click', () => switchOutputFormat('json'));
+            document.getElementById('formatHTML').addEventListener('click', () => switchOutputFormat('html'));
+            document.getElementById('formatCSV').addEventListener('click', () => switchOutputFormat('csv'));
+            // Export HTML button (if exists)
+            const exportHTMLBtn = document.getElementById('exportHTML');
+            if (exportHTMLBtn) {
+                exportHTMLBtn.addEventListener('click', exportHTML);
+            }
 
             // Wypełnienie treści kart
             state.selectedLanguages.forEach(langCode => {
@@ -1335,6 +1588,21 @@ ${content.body}`;
             });
             dom.sourceFileInput.addEventListener('change', handleFileChange);
 
+            // Listenery dla Brand Audience
+            dom.brandAudienceSelect.addEventListener('change', (e) => {
+                state.brandAudience = e.target.value;
+                // Show/hide custom textarea
+                if (e.target.value === 'other') {
+                    dom.brandAudienceCustom.classList.remove('hidden');
+                } else {
+                    dom.brandAudienceCustom.classList.add('hidden');
+                    state.brandAudienceCustom = '';
+                }
+            });
+            dom.brandAudienceCustom.addEventListener('input', (e) => {
+                state.brandAudienceCustom = e.target.value;
+            });
+
             // Inicjalizacja języków
             renderLanguageSelector();
 
@@ -1355,6 +1623,14 @@ ${content.body}`;
                 if (e.target === dom.emailModal) hideEmailModal();
             });
 
+            // Listenery modala HTML Preview
+            document.getElementById('htmlPreviewModalCloseButton').addEventListener('click', hideHTMLPreview);
+            document.getElementById('htmlPreviewCopyButton').addEventListener('click', copyHTMLCode);
+            document.getElementById('htmlPreviewDownloadButton').addEventListener('click', downloadHTMLFromPreview);
+            document.getElementById('htmlPreviewModal').addEventListener('click', (e) => {
+                if (e.target.id === 'htmlPreviewModal') hideHTMLPreview();
+            });
+
             // Listenery modala API key
             document.getElementById('apiKeyButton').addEventListener('click', showApiKeyModal);
             document.getElementById('apiKeyModalCloseButton').addEventListener('click', hideApiKeyModal);
@@ -1362,6 +1638,18 @@ ${content.body}`;
             document.getElementById('apiKeyClearButton').addEventListener('click', clearApiKey);
             document.getElementById('apiKeyModal').addEventListener('click', (e) => {
                 if (e.target.id === 'apiKeyModal') hideApiKeyModal();
+            });
+
+            // Listenery modala Feedback
+            document.getElementById('feedbackModalCloseButton').addEventListener('click', hideFeedbackModal);
+            document.getElementById('feedbackCancelButton').addEventListener('click', hideFeedbackModal);
+            document.getElementById('feedbackSubmitButton').addEventListener('click', submitFeedback);
+            document.getElementById('feedbackModal').addEventListener('click', (e) => {
+                if (e.target.id === 'feedbackModal') hideFeedbackModal();
+            });
+            // NPS rating slider
+            document.getElementById('npsRating').addEventListener('input', (e) => {
+                document.getElementById('npsRatingValue').textContent = e.target.value;
             });
 
             // Delegacja zdarzeń dla dynamicznych wyników
