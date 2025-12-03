@@ -555,7 +555,7 @@ Format the entire response as a single, clean JSON object, with no surrounding t
         async function callGeminiForHTML(prompt) {
             const apiKey = getApiKey();
             if (!apiKey) throw new Error("API key not configured");
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
             const payload = {
                 contents: [{ parts: [{ text: prompt }] }],
                 generationConfig: {
@@ -593,7 +593,7 @@ Format the entire response as a single, clean JSON object, with no surrounding t
         async function callGeminiApi(prompt) {
             const apiKey = getApiKey();
             if (!apiKey) throw new Error("API key not configured");
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
             const payload = {
                 contents: [{ parts: [{ text: prompt }] }],
                 generationConfig: {
@@ -644,7 +644,7 @@ Format the entire response as a single, clean JSON object, with no surrounding t
         async function callGeminiForAssets(prompt) {
             const apiKey = getApiKey();
             if (!apiKey) throw new Error("API key not configured");
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
             const payload = {
                 contents: [{ parts: [{ text: prompt }] }],
                 generationConfig: {
