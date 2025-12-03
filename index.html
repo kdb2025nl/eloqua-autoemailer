@@ -8,6 +8,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Ładowanie biblioteki ikon Lucide (Poprawiony URL) -->
     <script src="https://unpkg.com/lucide/dist/umd/lucide.js"></script>
+    <!-- Ładowanie PDF.js dla parsowania PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- Ładowanie Mammoth.js dla parsowania Word DOCX -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     <style>
         /* Styl dla animacji ładowania */
         @keyframes spin {
@@ -74,13 +78,19 @@
                     <textarea id="sourceText" placeholder="Paste your article or text content here..." class="w-full h-32 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#DC0028] outline-none resize-y"></textarea>
                 </div>
                 <div id="input-file" class="hidden">
-                    <div class="flex items-center gap-4">
-                        <label class="cursor-pointer px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-semibold flex items-center gap-2">
-                            <i data-lucide="upload-cloud" class="w-4 h-4"></i>
-                            <span id="file-label">Upload File</span>
-                            <input type="file" id="sourceFile" accept=".txt,.md,.text" class="hidden">
-                        </label>
-                        <p id="file-name" class="text-gray-600"></p>
+                    <div class="flex flex-col gap-2">
+                        <div class="flex items-center gap-4">
+                            <label class="cursor-pointer px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-semibold flex items-center gap-2">
+                                <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+                                <span id="file-label">Upload File</span>
+                                <input type="file" id="sourceFile" accept=".txt,.md,.text,.pdf,.doc,.docx" class="hidden">
+                            </label>
+                            <p id="file-name" class="text-gray-600"></p>
+                        </div>
+                        <p class="text-xs text-gray-500">
+                            <i data-lucide="info" class="w-3 h-3 inline"></i>
+                            Supported formats: TXT, Markdown, PDF, Word (.docx)
+                        </p>
                     </div>
                 </div>
             </div>
@@ -190,7 +200,7 @@
                 </button>
             </div>
             <div class="p-6 flex-grow overflow-y-auto bg-gray-100">
-                <iframe id="htmlPreviewFrame" class="w-full h-full min-h-[600px] bg-white rounded border border-gray-300" frameborder="0" sandbox="allow-same-origin allow-scripts"></iframe>
+                <iframe id="htmlPreviewFrame" class="w-full h-full min-h-[600px] bg-white rounded border border-gray-300" frameborder="0"></iframe>
             </div>
             <div class="p-4 bg-gray-50 border-t rounded-b-2xl flex gap-2">
                 <button id="htmlPreviewCopyButton" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 flex items-center justify-center gap-2 text-sm">
@@ -568,16 +578,16 @@ Please create:
    - Main content presenting insights and data from the source material
    - Use nuanced language - avoid absolute statements
    - A clear call-to-action (be confident and direct)
-   - At the END of the body, add: "\\n\\nKey insights:\\n" followed by 2-3 bullet points (use • as bullets)
-   - Each bullet should be a concise, specific insight (one line each)
    - Use '\\n' for new paragraphs to ensure proper formatting
    - Keep sentences varied in length but aim for under 18 words
    - Use warm, professional language - imagine a conversation with a business contact
    - Balance "you/your" with "we/our" naturally - focus on the relationship and shared success
 
+CRITICAL: The body must END with the call-to-action. DO NOT add "Key insights:", "Key takeaways:", bullet points, or any list at the end of the body text. The body should be pure paragraph text only.
+
 4. A short, actionable call-to-action text (max 5 words). Be confident and direct.
 
-5. Key insights: 2-3 clear, specific insights from the source material. These should match the bullet points at the end of the email body.
+5. Key insights: 2-3 clear, specific insights from the source material. These go in the keyInsights array field ONLY, never in the body text.
 
 Remember: Be CLEAR (simple language), CONFIDENT (strong and direct), HELPFUL (focused on the reader's needs).
 
@@ -654,9 +664,17 @@ Format the entire response as a single, clean JSON object, with no surrounding t
             if (!apiKey) throw new Error("API key not configured");
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
             const payload = {
-                contents: [{ parts: [{ text: prompt }] }],
+                contents: [
+                    {
+                        role: "user",
+                        parts: [{ text: prompt }]
+                    }
+                ],
                 generationConfig: {
                     responseMimeType: "application/json",
+                    temperature: 0.9,
+                    topP: 0.95,
+                    topK: 40,
                     responseSchema: {
                         type: "OBJECT",
                         properties: {
@@ -705,9 +723,17 @@ Format the entire response as a single, clean JSON object, with no surrounding t
             if (!apiKey) throw new Error("API key not configured");
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
             const payload = {
-                contents: [{ parts: [{ text: prompt }] }],
+                contents: [
+                    {
+                        role: "user",
+                        parts: [{ text: prompt }]
+                    }
+                ],
                 generationConfig: {
                     responseMimeType: "application/json",
+                    temperature: 0.9,
+                    topP: 0.95,
+                    topK: 40,
                     responseSchema: {
                         type: "OBJECT",
                         properties: {
@@ -779,19 +805,82 @@ Format the entire response as a single, clean JSON object, with no surrounding t
             checkReadiness();
         }
 
-        function handleFileChange(e) {
+        async function handleFileChange(e) {
             const file = e.target.files?.[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    state.sourceFile = { name: file.name, content: e.target?.result };
+            if (!file) return;
+
+            const fileName = file.name.toLowerCase();
+            dom.fileName.textContent = `Loading ${file.name}...`;
+
+            try {
+                let content = '';
+
+                if (fileName.endsWith('.pdf')) {
+                    // Handle PDF files
+                    content = await extractTextFromPDF(file);
+                } else if (fileName.endsWith('.docx')) {
+                    // Handle DOCX files
+                    content = await extractTextFromDOCX(file);
+                } else if (fileName.endsWith('.doc')) {
+                    // Old .doc format not supported - show message
+                    alert('Old .doc format is not supported. Please save as .docx or copy the text manually.');
+                    dom.fileName.textContent = '';
+                    e.target.value = '';
+                    return;
+                } else {
+                    // Handle text files (.txt, .md, .text)
+                    content = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => resolve(e.target.result);
+                        reader.onerror = reject;
+                        reader.readAsText(file);
+                    });
+                }
+
+                if (content && content.trim()) {
+                    state.sourceFile = { name: file.name, content: content.trim() };
                     dom.fileName.textContent = file.name;
                     dom.fileLabel.textContent = 'Change File';
                     checkReadiness();
-                };
-                reader.readAsText(file);
+                } else {
+                    throw new Error('No text content found in file');
+                }
+            } catch (error) {
+                console.error('Error reading file:', error);
+                alert(`Failed to read file: ${error.message}`);
+                dom.fileName.textContent = '';
             }
+
             e.target.value = ''; // Reset file input
+        }
+
+        async function extractTextFromPDF(file) {
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                let fullText = '';
+
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items.map(item => item.str).join(' ');
+                    fullText += pageText + '\n\n';
+                }
+
+                return fullText.trim();
+            } catch (error) {
+                throw new Error(`PDF extraction failed: ${error.message}`);
+            }
+        }
+
+        async function extractTextFromDOCX(file) {
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const result = await mammoth.extractRawText({ arrayBuffer });
+                return result.value;
+            } catch (error) {
+                throw new Error(`DOCX extraction failed: ${error.message}`);
+            }
         }
 
         function toggleLanguage(langCode) {
@@ -1495,7 +1584,7 @@ Timestamp: ${feedback.timestamp}
                                 data-action="preview-html"
                                 data-lang="${langCode}"
                             >
-                                <i data-lucide="monitor" class="w-4 h-4"></i> 📧 Preview HTML Email
+                                <i data-lucide="monitor" class="w-4 h-4"></i> Preview HTML Email
                             </button>
                             ` : ''}
                             <button
@@ -1503,7 +1592,7 @@ Timestamp: ${feedback.timestamp}
                                 data-action="share-feedback"
                                 data-lang="${langCode}"
                             >
-                                <i data-lucide="message-circle" class="w-4 h-4"></i> 💬 Share Feedback
+                                <i data-lucide="message-circle" class="w-4 h-4"></i> Share Feedback
                             </button>
                             <button
                                 class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 flex items-center justify-center gap-2 text-sm disabled:bg-blue-300 disabled:cursor-wait"
@@ -1513,7 +1602,7 @@ Timestamp: ${feedback.timestamp}
                             >
                                 ${state.assetGenerationLoading === langCode
                                     ? '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Generating...'
-                                    : '<i data-lucide="sparkles" class="w-4 h-4"></i> ✨ Generate Campaign Assets'
+                                    : '<i data-lucide="sparkles" class="w-4 h-4"></i> Generate Campaign Assets'
                                 }
                             </button>
                         </div>
@@ -1541,9 +1630,12 @@ Timestamp: ${feedback.timestamp}
                 }
             }
 
-            // Zawsze na końcu renderowania karty, wywołaj createIcons
+            // Renderuj ikony tylko w tym kontenerze, na końcu
             if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
+                // Używamy requestAnimationFrame żeby poczekać aż DOM się zaktualizuje
+                requestAnimationFrame(() => {
+                    lucide.createIcons();
+                });
             }
         }
 
@@ -1653,6 +1745,11 @@ Timestamp: ${feedback.timestamp}
         // --- INICJALIZACJA APLIKACJI ---
 
         document.addEventListener('DOMContentLoaded', () => {
+            // Konfiguracja PDF.js
+            if (typeof pdfjsLib !== 'undefined') {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            }
+
             // Upewnij się, że lucide jest dostępne, zanim spróbujesz go użyć
             if (typeof lucide === 'undefined') {
                 console.error('Lucide icons script failed to load.');
