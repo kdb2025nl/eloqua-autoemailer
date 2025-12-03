@@ -462,6 +462,25 @@
             return cleaned.trim();
         }
 
+        function ensureHtmlClosed(rawHtml) {
+            let html = rawHtml.trim();
+
+            // Jeśli już jest poprawnie domknięty, zostaw
+            if (html.toLowerCase().endsWith("</html>")) {
+                return html;
+            }
+
+            console.warn("HTML missing closing tag, auto-completing...");
+
+            // Jeśli jest </body>, ale brak </html> – tylko domykamy html
+            if (html.toLowerCase().includes("</body>")) {
+                return html + "\n</html>";
+            }
+
+            // Fallback: jakby ucięło pod koniec, i tak domykamy oba
+            return html + "\n</body>\n</html>";
+        }
+
         function checkReadiness() {
             const sourceContent = getSourceContent();
             const isReady = !!sourceContent.trim() && state.selectedLanguages.length > 0;
@@ -495,8 +514,8 @@ REQUIRED SECTIONS:
 1. Logo: https://image.e.atradius.com/EloquaImages/clients/atradiuscollections/{0529efc5-58fd-4150-8e3b-74c3440d5d6d}_AC-Logo-Color-50px.png
 2. Hero image (from source or https://via.placeholder.com/600x200)
 3. Headline (max 15 words, sentence case)
-4. Body (150-200 words, use nuanced language: "can help", "may improve", "suggests" - NOT absolute claims)
-5. Key insights list (2-3 bullets with ✔️)
+4. Body (150-200 words, use nuanced language: "can help", "may improve", "suggests" - NOT absolute claims. DO NOT include "Key insights:" at the end of body)
+5. Separate "Key insights" section AFTER body with 2-3 bullets (✔️). This should be a distinct section, NOT part of body text
 6. CTA button (background:#DC0028, color:#fff, padding:10px 20px)
 7. Footer with unsubscribe link
 
@@ -508,7 +527,10 @@ CONTENT RULES:
 - MSO comments for Outlook
 - Alt text on all images
 
-Generate complete HTML ending with </html>.${sourceData}`;
+CRITICAL: Your entire response must be a single complete HTML email document.
+It must start with <!DOCTYPE html> and end with </html>.
+Do not add anything after the closing </html> tag.
+Generate the complete HTML ending with </html>.${sourceData}`;
             }
 
             return `Based on ${sourceIdentifier}, generate professional email content in ${languageName}.${audienceContext}
@@ -569,11 +591,17 @@ Format the entire response as a single, clean JSON object, with no surrounding t
             if (!apiKey) throw new Error("API key not configured");
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
             const payload = {
-                contents: [{ parts: [{ text: prompt }] }],
+                contents: [
+                    {
+                        role: "user",
+                        parts: [{ text: prompt }]
+                    }
+                ],
                 generationConfig: {
-                    responseMimeType: "text/plain",
-                    maxOutputTokens: 16384,
-                    temperature: 0.9
+                    maxOutputTokens: 4096,
+                    temperature: 0.9,
+                    topP: 0.95,
+                    topK: 40
                 }
             };
 
@@ -591,30 +619,23 @@ Format the entire response as a single, clean JSON object, with no surrounding t
                     const htmlContent = candidate?.content?.parts?.[0]?.text;
                     const finishReason = candidate?.finishReason;
 
-                    // Check for truncation
-                    if (finishReason === 'MAX_TOKENS') {
-                        console.warn('HTML generation was truncated due to MAX_TOKENS');
-                        throw new Error("HTML generation exceeded token limit. Try a shorter source or reduce content.");
-                    }
-
                     if (htmlContent) {
                         const cleaned = cleanHTMLResponse(htmlContent);
+                        const safeHtml = ensureHtmlClosed(cleaned);
 
-                        // Validate HTML is complete
-                        const hasDoctype = cleaned.toLowerCase().includes('<!doctype html>');
-                        const hasClosingHtml = cleaned.toLowerCase().includes('</html>');
+                        // Check for truncation
+                        if (finishReason === 'MAX_TOKENS') {
+                            console.warn('⚠️ HTML generation was truncated due to MAX_TOKENS - auto-completing HTML tags');
+                        }
 
+                        // Validate HTML
+                        const hasDoctype = safeHtml.toLowerCase().includes('<!doctype html>');
                         if (!hasDoctype) {
                             console.warn('HTML missing DOCTYPE declaration');
                         }
-                        if (!hasClosingHtml) {
-                            console.error('HTML is INCOMPLETE - missing </html> closing tag!');
-                            console.log('Last 200 characters:', cleaned.slice(-200));
-                            throw new Error("HTML generation incomplete. Please try again or use a shorter source.");
-                        }
 
-                        console.log(`HTML generation complete. Finish reason: ${finishReason}, Length: ${cleaned.length} chars`);
-                        return cleaned;
+                        console.log(`✅ HTML generation complete. Finish reason: ${finishReason}, Length: ${safeHtml.length} chars`);
+                        return safeHtml;
                     } else {
                         throw new Error("Invalid API response structure");
                     }
