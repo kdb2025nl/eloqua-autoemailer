@@ -186,7 +186,7 @@
                 </button>
             </div>
             <div class="p-6 flex-grow overflow-y-auto bg-gray-100">
-                <iframe id="htmlPreviewFrame" class="w-full h-full min-h-[600px] bg-white rounded border border-gray-300" frameborder="0"></iframe>
+                <iframe id="htmlPreviewFrame" class="w-full h-full min-h-[600px] bg-white rounded border border-gray-300" frameborder="0" sandbox="allow-same-origin allow-scripts"></iframe>
             </div>
             <div class="p-4 bg-gray-50 border-t rounded-b-2xl flex gap-2">
                 <button id="htmlPreviewCopyButton" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 flex items-center justify-center gap-2 text-sm">
@@ -438,6 +438,26 @@
             }
         }
 
+        function cleanHTMLResponse(text) {
+            if (!text) return '';
+
+            // Remove markdown code block wrappers if present
+            let cleaned = text.trim();
+
+            // Remove ```html at the start and ``` at the end
+            if (cleaned.startsWith('```html')) {
+                cleaned = cleaned.substring(7);
+            } else if (cleaned.startsWith('```')) {
+                cleaned = cleaned.substring(3);
+            }
+
+            if (cleaned.endsWith('```')) {
+                cleaned = cleaned.substring(0, cleaned.length - 3);
+            }
+
+            return cleaned.trim();
+        }
+
         function checkReadiness() {
             const sourceContent = getSourceContent();
             const isReady = !!sourceContent.trim() && state.selectedLanguages.length > 0;
@@ -576,7 +596,7 @@ Format the entire response as a single, clean JSON object, with no surrounding t
                     const candidate = result.candidates?.[0];
                     const htmlContent = candidate?.content?.parts?.[0]?.text;
                     if (htmlContent) {
-                        return htmlContent;
+                        return cleanHTMLResponse(htmlContent);
                     } else {
                         throw new Error("Invalid API response structure");
                     }
@@ -799,6 +819,8 @@ Format the entire response as a single, clean JSON object, with no surrounding t
                         const htmlPrompt = getBasePrompt(LANGUAGES[langCode].name, true);
                         const htmlContent = await callGeminiForHTML(htmlPrompt);
                         if (state.isCancelledRef) return;
+                        console.log(`Generated HTML for ${langCode}, length: ${htmlContent?.length || 0}`);
+                        console.log(`HTML starts with: ${htmlContent?.substring(0, 100)}`);
                         state.generatedHTML[langCode] = htmlContent;
                     }
 
@@ -1058,7 +1080,14 @@ ${content.body}`;
 
         function showHTMLPreview(langCode) {
             const htmlContent = state.generatedHTML[langCode];
-            if (!htmlContent) return;
+            if (!htmlContent) {
+                console.error(`No HTML content found for language: ${langCode}`);
+                alert('No HTML content available for this language. Please generate HTML format first.');
+                return;
+            }
+
+            console.log(`Showing HTML preview for ${langCode}, content length: ${htmlContent.length}`);
+            console.log('First 200 characters:', htmlContent.substring(0, 200));
 
             currentPreviewHTML = htmlContent;
             currentPreviewLangCode = langCode;
@@ -1066,8 +1095,27 @@ ${content.body}`;
             const modal = document.getElementById('htmlPreviewModal');
             const iframe = document.getElementById('htmlPreviewFrame');
 
-            // Load HTML into iframe
-            iframe.srcdoc = htmlContent;
+            // Clear previous content
+            iframe.srcdoc = '';
+
+            // Method 1: Use srcdoc (preferred)
+            try {
+                iframe.srcdoc = htmlContent;
+                console.log('HTML loaded via srcdoc');
+            } catch (e) {
+                console.error('srcdoc failed, trying document.write:', e);
+                // Method 2: Fallback to document.write
+                try {
+                    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                    iframeDoc.open();
+                    iframeDoc.write(htmlContent);
+                    iframeDoc.close();
+                    console.log('HTML loaded via document.write');
+                } catch (e2) {
+                    console.error('Both methods failed:', e2);
+                    alert('Failed to load HTML preview. Check console for details.');
+                }
+            }
 
             modal.classList.remove('hidden');
             if (typeof lucide !== 'undefined') {
