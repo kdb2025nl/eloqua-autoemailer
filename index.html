@@ -500,10 +500,22 @@
             };
         }
 
-        async function fetchUrlAsText(url) {
-            // Try Jina.ai first (bypasses CORS, returns clean markdown)
+        async function fetchUrlAsText(rawInput) {
+            // 1. Extract clean URL from input (handles cases like "Based on https://example.com...")
+            const urlMatch = rawInput.match(/https?:\/\/[^\s"']+/);
+            if (!urlMatch) {
+                throw new Error("No valid URL found in input. Please provide a URL starting with http:// or https://");
+            }
+            const cleanUrl = urlMatch[0];
+
+            // Log if we extracted URL from longer text
+            if (cleanUrl !== rawInput.trim()) {
+                console.log(`📎 Extracted URL from input: ${cleanUrl}`);
+            }
+
+            // 2. Try Jina.ai first (bypasses CORS, returns clean markdown)
             try {
-                const jinaUrl = "https://r.jina.ai/" + url;
+                const jinaUrl = "https://r.jina.ai/" + cleanUrl;
                 const response = await fetch(jinaUrl);
                 if (!response.ok) throw new Error(`Jina.ai failed: ${response.status}`);
                 const text = await response.text();
@@ -512,13 +524,13 @@
                 console.warn("Jina.ai failed, trying corsproxy.io...", jinaError);
                 // Fallback to corsproxy.io
                 try {
-                    const proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(url);
+                    const proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(cleanUrl);
                     const response = await fetch(proxyUrl);
                     if (!response.ok) throw new Error(`Corsproxy failed: ${response.status}`);
                     const text = await response.text();
                     return text.trim();
                 } catch (proxyError) {
-                    throw new Error(`Both Jina.ai and corsproxy.io failed to fetch URL: ${url}`);
+                    throw new Error(`Both Jina.ai and corsproxy.io failed to fetch URL: ${cleanUrl}`);
                 }
             }
         }
