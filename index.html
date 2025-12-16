@@ -139,7 +139,7 @@
             </button>
             <p class="text-xs text-gray-500">
                 <i data-lucide="info" class="w-3 h-3 inline"></i>
-                Generation includes rate-limit delays (3s between API calls). HTML format takes ~90s per language, JSON takes ~40s per language. Time scales with concurrency (max 2 parallel).
+                ⚠️ IMPORTANT: Generation includes 15s delays between API calls to avoid rate limits. Processing is SEQUENTIAL (one language at a time). HTML: ~2 min/language, JSON: ~50s/language. Be patient!
             </p>
             <p id="estimatedTime" class="text-sm text-gray-500 hidden">
                 <i data-lucide="clock" class="w-4 h-4 inline"></i>
@@ -346,8 +346,9 @@
             'ES': { name: 'Spanish', flag: '🇪🇸' }
         };
 
-        const API_CONCURRENCY_LIMIT = 2; // Reduced to 2 for better rate limit compliance
-        const API_DELAY_MS = 3000; // 3 second delay between API calls to avoid rate limits
+        const API_CONCURRENCY_LIMIT = 1; // Sequential processing only - one request at a time
+        const API_DELAY_MS = 15000; // 15 second delay between API calls to avoid rate limits
+        const INITIAL_DELAY_MS = 5000; // 5 second initial delay to let quota reset
 
         // --- STAN APLIKACJI ---
 
@@ -672,9 +673,9 @@ Format the entire response as a single, clean JSON object, with no surrounding t
                     attempts++;
                     console.error(`Attempt ${attempts} failed:`, error);
                     if (attempts >= 3) throw error;
-                    // Longer delays for rate limit errors (429)
-                    const delayMs = error.status === 429 ? 10000 * attempts : 2000 * attempts;
-                    console.log(`⏱️ Retrying in ${delayMs}ms...`);
+                    // Much longer delays for rate limit errors (429) - 30s, 60s, 90s
+                    const delayMs = error.status === 429 ? 30000 * attempts : 3000 * attempts;
+                    console.log(`⏱️ Retrying in ${delayMs / 1000}s... (This is normal for rate limits)`);
                     await sleep(delayMs);
                 }
             }
@@ -738,9 +739,9 @@ Format the entire response as a single, clean JSON object, with no surrounding t
                     attempts++;
                     console.error(`Attempt ${attempts} failed:`, error);
                     if (attempts >= 3) throw error;
-                    // Longer delays for rate limit errors (429)
-                    const delayMs = error.status === 429 ? 10000 * attempts : 2000 * attempts;
-                    console.log(`⏱️ Retrying in ${delayMs}ms...`);
+                    // Much longer delays for rate limit errors (429) - 30s, 60s, 90s
+                    const delayMs = error.status === 429 ? 30000 * attempts : 3000 * attempts;
+                    console.log(`⏱️ Retrying in ${delayMs / 1000}s... (This is normal for rate limits)`);
                     await sleep(delayMs);
                 }
             }
@@ -813,9 +814,9 @@ Format the entire response as a single, clean JSON object, with no surrounding t
                     attempts++;
                     console.error(`Attempt ${attempts} failed:`, error);
                     if (attempts >= 3) throw error;
-                    // Longer delays for rate limit errors (429)
-                    const delayMs = error.status === 429 ? 10000 * attempts : 2000 * attempts;
-                    console.log(`⏱️ Retrying in ${delayMs}ms...`);
+                    // Much longer delays for rate limit errors (429) - 30s, 60s, 90s
+                    const delayMs = error.status === 429 ? 30000 * attempts : 3000 * attempts;
+                    console.log(`⏱️ Retrying in ${delayMs / 1000}s... (This is normal for rate limits)`);
                     await sleep(delayMs);
                 }
             }
@@ -948,13 +949,14 @@ Format the entire response as a single, clean JSON object, with no surrounding t
             state.startTime = Date.now();
 
             // Calculate estimated time with rate limiting delays
-            // Each language: JSON call (~35s) + delay (3s) + HTML call (~55s if HTML) + delay (3s)
+            // Initial delay + each language: JSON call (~35s) + delay (15s) + HTML call (~55s if HTML) + delay (15s)
+            const initialDelay = INITIAL_DELAY_MS / 1000; // 5s initial delay
             const apiCallsPerLang = state.outputFormat === 'html' ? 2 : 1;
             const timePerApiCall = state.outputFormat === 'html' ? 45 : 35; // Average API response time
-            const delayPerCall = API_DELAY_MS / 1000; // Convert to seconds
+            const delayPerCall = API_DELAY_MS / 1000; // 15s between calls
             const timePerLang = (timePerApiCall + delayPerCall) * apiCallsPerLang;
-            // Adjust for concurrency (2 workers process in parallel)
-            const totalTime = Math.ceil(state.selectedLanguages.length / API_CONCURRENCY_LIMIT) * timePerLang;
+            // Sequential processing (1 worker only)
+            const totalTime = initialDelay + (state.selectedLanguages.length * timePerLang);
             state.estimatedTime = totalTime;
 
             updateButtons();
@@ -966,6 +968,10 @@ Format the entire response as a single, clean JSON object, with no surrounding t
             state.languageStatus = initialStatus;
 
             renderResults(); // Pokaż szkielety kart
+
+            // Initial delay to let API quota reset
+            console.log(`⏱️ Waiting ${INITIAL_DELAY_MS / 1000}s before starting to let API quota reset...`);
+            await sleep(INITIAL_DELAY_MS);
 
             // Start timer to update estimated time
             const timerInterval = setInterval(() => {
@@ -1001,7 +1007,18 @@ Format the entire response as a single, clean JSON object, with no surrounding t
                 } catch (error) {
                     console.error(`Error generating for ${langCode}:`, error);
                     if (state.isCancelledRef) return;
-                    state.languageStatus[langCode] = { status: 'error', error: error.message };
+
+                    // Special handling for rate limit errors
+                    let errorMessage = error.message;
+                    if (error.message.includes('429')) {
+                        errorMessage = 'API quota exceeded. Please wait 5-10 minutes and try again with fewer languages or JSON format only.';
+                        // Show alert only once
+                        if (Object.values(state.languageStatus).filter(s => s.status === 'error').length === 0) {
+                            alert('⚠️ API Rate Limit Exceeded\n\nYour Google Gemini API quota has been exhausted.\n\nSolutions:\n1. Wait 5-10 minutes for quota to reset\n2. Select fewer languages (1-2 instead of 4)\n3. Use JSON format instead of HTML (faster, uses less quota)\n4. Check your API quota at: https://aistudio.google.com/app/apikey');
+                        }
+                    }
+
+                    state.languageStatus[langCode] = { status: 'error', error: errorMessage };
                     renderCardContent(langCode); // Pokaż błąd na karcie
                 }
             };
