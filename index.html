@@ -355,6 +355,7 @@
         let state = {
             inputType: 'url',
             sourceUrl: '',
+            sourceUrlText: '', // Cache for fetched URL content
             sourceText: '',
             sourceFile: null, // { name: string, content: string }
             brandAudience: 'existing clients', // Default audience
@@ -445,9 +446,127 @@
             document.body.removeChild(textArea);
         }
 
-        function getSourceContent() {
+        function getSourceLabel() {
             switch (state.inputType) {
                 case 'url': return state.sourceUrl;
+                case 'text': return 'pasted text';
+                case 'file': return state.sourceFile?.name || 'uploaded file';
+                default: return '';
+            }
+        }
+
+        // === ANTI-HALLUCINATION VALIDATION HELPERS ===
+
+        function stripHtmlToText(html) {
+            // Remove scripts, styles, and HTML tags to get clean text
+            let text = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+            text = text.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
+            text = text.replace(/<[^>]+>/g, ' ');
+            text = text.replace(/\s+/g, ' ').trim();
+            return text;
+        }
+
+        function extractNumberTokens(text) {
+            // Extract all number-like tokens: years, percentages, decimals, large numbers with commas
+            const regex = /\b\d[\d,.]*%?\b/g;
+            const matches = text.match(regex) || [];
+            return matches;
+        }
+
+        function normalizeNum(numStr) {
+            // Normalize number string for comparison: remove commas, spaces
+            // Keep only digits and first decimal point
+            return numStr.replace(/[,\s]/g, '').replace(/%/g, '');
+        }
+
+        function validateNoNewNumbers(outputText, sourceText) {
+            const outputNumbers = extractNumberTokens(outputText);
+            const sourceNumbers = extractNumberTokens(sourceText);
+
+            // Normalize both sets
+            const normalizedSource = new Set(sourceNumbers.map(normalizeNum));
+            const missing = [];
+
+            for (const outNum of outputNumbers) {
+                const normalized = normalizeNum(outNum);
+                if (!normalizedSource.has(normalized)) {
+                    missing.push(outNum);
+                }
+            }
+
+            return {
+                ok: missing.length === 0,
+                missing: missing
+            };
+        }
+
+        async function fetchUrlAsText(url) {
+            // Try Jina.ai first (bypasses CORS, returns clean markdown)
+            try {
+                const jinaUrl = "https://r.jina.ai/" + url;
+                const response = await fetch(jinaUrl);
+                if (!response.ok) throw new Error(`Jina.ai failed: ${response.status}`);
+                const text = await response.text();
+                return text.trim();
+            } catch (jinaError) {
+                console.warn("Jina.ai failed, trying corsproxy.io...", jinaError);
+                // Fallback to corsproxy.io
+                try {
+                    const proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(url);
+                    const response = await fetch(proxyUrl);
+                    if (!response.ok) throw new Error(`Corsproxy failed: ${response.status}`);
+                    const text = await response.text();
+                    return text.trim();
+                } catch (proxyError) {
+                    throw new Error(`Both Jina.ai and corsproxy.io failed to fetch URL: ${url}`);
+                }
+            }
+        }
+
+        function buildSourcePack(rawText, maxChars = 25000) {
+            // Compress long content intelligently:
+            // Keep first 40 lines, last 20 lines, and any line with numbers/percentages + 1 line context
+            const lines = rawText.split('\n');
+            if (lines.length <= 60) {
+                // Short enough, return as-is (normalized)
+                return rawText.replace(/\s+/g, ' ').trim().substring(0, maxChars);
+            }
+
+            const kept = new Set();
+
+            // Keep first 40 lines
+            for (let i = 0; i < Math.min(40, lines.length); i++) {
+                kept.add(i);
+            }
+
+            // Keep last 20 lines
+            for (let i = Math.max(0, lines.length - 20); i < lines.length; i++) {
+                kept.add(i);
+            }
+
+            // Keep lines with numbers/percentages + context
+            const numberRegex = /\d|%/;
+            for (let i = 0; i < lines.length; i++) {
+                if (numberRegex.test(lines[i])) {
+                    kept.add(Math.max(0, i - 1)); // Line before
+                    kept.add(i); // Line itself
+                    kept.add(Math.min(lines.length - 1, i + 1)); // Line after
+                }
+            }
+
+            // Build compressed text
+            const sortedIndices = Array.from(kept).sort((a, b) => a - b);
+            const compressedLines = sortedIndices.map(i => lines[i]);
+            let compressed = compressedLines.join('\n');
+
+            // Normalize whitespace and trim to maxChars
+            compressed = compressed.replace(/\s+/g, ' ').trim();
+            return compressed.substring(0, maxChars);
+        }
+
+        function getSourceContent() {
+            switch (state.inputType) {
+                case 'url': return state.sourceUrlText; // Return cached fetched content
                 case 'text': return state.sourceText;
                 case 'file': return state.sourceFile?.content || '';
                 default: return '';
@@ -494,15 +613,27 @@
         }
 
         function checkReadiness() {
-            const sourceContent = getSourceContent();
-            const isReady = !!sourceContent.trim() && state.selectedLanguages.length > 0;
+            let hasSource = false;
+            if (state.inputType === 'url') {
+                hasSource = !!state.sourceUrl.trim(); // For URL, just check if URL is entered
+            } else {
+                const sourceContent = getSourceContent();
+                hasSource = !!sourceContent.trim();
+            }
+            const isReady = hasSource && state.selectedLanguages.length > 0;
             dom.generateButton.disabled = !isReady || state.isProcessing;
         }
 
         const getBasePrompt = (languageName, isHTML = false) => {
             const sourceContent = getSourceContent();
-            const sourceIdentifier = state.inputType === 'url' ? `the article at ${sourceContent}` : `the following text`;
-            const sourceData = state.inputType !== 'url' ? `\n\n---SOURCE TEXT---\n${sourceContent}\n---END SOURCE TEXT---` : '';
+            const sourceIdentifier = state.inputType === 'url' ? 'the article from the provided URL' : 'the following text';
+
+            // Always include source text (for URL, it's fetched content)
+            let sourceHeader = '';
+            if (state.inputType === 'url') {
+                sourceHeader = `SOURCE URL: ${state.sourceUrl}\n\n`;
+            }
+            const sourceData = `\n\n${sourceHeader}---SOURCE TEXT---\n${sourceContent}\n---END SOURCE TEXT---`;
 
             // Get audience context
             const audience = state.brandAudience === 'other' && state.brandAudienceCustom
@@ -539,12 +670,15 @@ CONTENT RULES:
 - MSO comments for Outlook
 - Alt text on all images
 
-DATA ACCURACY (CRITICAL):
+DATA ACCURACY (CRITICAL - ZERO TOLERANCE):
+- NEVER introduce any new numbers, years, or percentages not present in the source text
+- If a specific number is not in the source, OMIT it completely - do not estimate or approximate
 - ALWAYS preserve exact numbers, dates, years, percentages from the source
 - If source says "2024", use "2024" - NEVER approximate or change years
 - If source says "37%", use "37%" - NEVER round or estimate
 - Copy statistics, figures, and dates EXACTLY as they appear in source
 - When in doubt, quote the exact number from the source material
+- Better to have no number than a wrong number
 
 CRITICAL: Your entire response must be a single complete HTML email document.
 It must start with <!DOCTYPE html> and end with </html>.
@@ -577,12 +711,15 @@ WRITING STYLE RULES:
 - Use nuanced language: "can help", "tends to", "often shows", "may improve", "suggests", "indicates"
 - Present data and trends, let the reader draw conclusions
 
-DATA ACCURACY (CRITICAL):
+DATA ACCURACY (CRITICAL - ZERO TOLERANCE):
+- NEVER introduce any new numbers, years, or percentages not present in the source text
+- If a specific number is not in the source, OMIT it completely - do not estimate or approximate
 - ALWAYS preserve exact numbers, dates, years, percentages from the source
 - If source says "2024", use "2024" - NEVER approximate or change years
 - If source says "37%", use "37%" - NEVER round or estimate
 - Copy statistics, figures, and dates EXACTLY as they appear in source
 - When in doubt, quote the exact number from the source material
+- Better to have no number than a wrong number
 - Example: "In 2024, 37% of companies..." NOT "Recently, around 40% of companies..."
 
 Please create:
@@ -640,7 +777,7 @@ Format the entire response as a single, clean JSON object, with no surrounding t
                 ],
                 generationConfig: {
                     maxOutputTokens: 4096,
-                    temperature: 0.9,
+                    temperature: 0.2, // Low temperature for factual accuracy
                     topP: 0.95,
                     topK: 40
                 }
@@ -711,7 +848,7 @@ Format the entire response as a single, clean JSON object, with no surrounding t
                 ],
                 generationConfig: {
                     responseMimeType: "application/json",
-                    temperature: 0.9,
+                    temperature: 0.2, // Low temperature for factual accuracy
                     topP: 0.95,
                     topK: 40,
                     responseSchema: {
@@ -778,7 +915,7 @@ Format the entire response as a single, clean JSON object, with no surrounding t
                 ],
                 generationConfig: {
                     responseMimeType: "application/json",
-                    temperature: 0.9,
+                    temperature: 0.5, // Moderate temperature for creative assets
                     topP: 0.95,
                     topK: 40,
                     responseSchema: {
@@ -957,6 +1094,22 @@ Format the entire response as a single, clean JSON object, with no surrounding t
                 return;
             }
 
+            // FETCH URL CONTENT if needed
+            if (state.inputType === 'url' && !state.sourceUrlText) {
+                try {
+                    console.log(`🌐 Fetching URL content: ${state.sourceUrl}`);
+                    const rawText = await fetchUrlAsText(state.sourceUrl);
+                    const compressedText = buildSourcePack(rawText);
+                    state.sourceUrlText = compressedText;
+                    console.log(`✅ URL content fetched and cached (${compressedText.length} chars)`);
+                } catch (error) {
+                    console.error('❌ Failed to fetch URL:', error);
+                    alert(`Failed to fetch URL content:\n\n${error.message}\n\nPlease check the URL and try again.`);
+                    state.isProcessing = false;
+                    return;
+                }
+            }
+
             state.isProcessing = true;
             state.isCancelledRef = false;
             state.generatedContent = {};
@@ -1005,6 +1158,15 @@ Format the entire response as a single, clean JSON object, with no surrounding t
                     const content = await callGeminiApi(prompt);
                     if (state.isCancelledRef) return;
 
+                    // === VALIDATION: Check JSON for hallucinated numbers ===
+                    const sourceText = getSourceContent();
+                    const jsonText = JSON.stringify(content);
+                    const jsonValidation = validateNoNewNumbers(jsonText, sourceText);
+                    if (!jsonValidation.ok) {
+                        throw new Error(`❌ NUMBER HALLUCINATION DETECTED: Found numbers not in source: ${jsonValidation.missing.join(', ')}`);
+                    }
+                    console.log(`✅ JSON validation passed for ${langCode} - no hallucinated numbers`);
+
                     state.generatedContent[langCode] = content;
 
                     // If HTML format selected, also generate HTML
@@ -1012,8 +1174,16 @@ Format the entire response as a single, clean JSON object, with no surrounding t
                         const htmlPrompt = getBasePrompt(LANGUAGES[langCode].name, true);
                         const htmlContent = await callGeminiForHTML(htmlPrompt);
                         if (state.isCancelledRef) return;
+
+                        // === VALIDATION: Check HTML for hallucinated numbers ===
+                        const htmlText = stripHtmlToText(htmlContent);
+                        const htmlValidation = validateNoNewNumbers(htmlText, sourceText);
+                        if (!htmlValidation.ok) {
+                            throw new Error(`❌ NUMBER HALLUCINATION DETECTED in HTML: Found numbers not in source: ${htmlValidation.missing.join(', ')}`);
+                        }
+                        console.log(`✅ HTML validation passed for ${langCode} - no hallucinated numbers`);
+
                         console.log(`Generated HTML for ${langCode}, length: ${htmlContent?.length || 0}`);
-                        console.log(`HTML starts with: ${htmlContent?.substring(0, 100)}`);
                         state.generatedHTML[langCode] = htmlContent;
                     }
 
@@ -1211,7 +1381,7 @@ ${content.body}`;
         function formatContentForEmail() {
             let fullText = "ELOQUA CAMPAIGN GENERATOR - EXPORTED RESULTS\n";
             fullText += `Generated on: ${new Date().toLocaleString()}\n`;
-            fullText += `Source: ${getSourceContent()}\n\n`;
+            fullText += `Source: ${getSourceLabel()}\n\n`;
 
             if (!state.generatedContent || Object.keys(state.generatedContent).length === 0) {
                 return fullText + "No content generated.";
@@ -1574,7 +1744,7 @@ Timestamp: ${feedback.timestamp}
                 // TXT format: clean, readable text format
                 let txtContent = "ELOQUA CAMPAIGN GENERATOR - EXPORTED RESULTS\n";
                 txtContent += `Generated on: ${new Date().toLocaleString()}\n`;
-                txtContent += `Source: ${getSourceContent().substring(0, 100)}...\n`;
+                txtContent += `Source: ${getSourceLabel()}\n`;
                 txtContent += `\n${'='.repeat(80)}\n\n`;
 
                 Object.entries(state.generatedContent).forEach(([lang, content]) => {
@@ -1883,6 +2053,7 @@ Timestamp: ${feedback.timestamp}
             // Listenery dla inputów
             dom.sourceUrlInput.addEventListener('input', (e) => {
                 state.sourceUrl = e.target.value;
+                state.sourceUrlText = ''; // Clear cache when URL changes
                 checkReadiness();
             });
             dom.sourceTextInput.addEventListener('input', (e) => {
