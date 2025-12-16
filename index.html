@@ -139,7 +139,7 @@
             </button>
             <p class="text-xs text-gray-500">
                 <i data-lucide="info" class="w-3 h-3 inline"></i>
-                ⚠️ IMPORTANT: Generation includes 15s delays between API calls to avoid rate limits. Processing is SEQUENTIAL (one language at a time). HTML: ~2 min/language, JSON: ~50s/language. Be patient!
+                ⚠️ IMPORTANT: Generation includes 15s delays between API calls to avoid rate limits. Processing is SEQUENTIAL (one language at a time). HTML: ~2 min/language, TXT: ~50s/language. Be patient!
             </p>
             <p id="estimatedTime" class="text-sm text-gray-500 hidden">
                 <i data-lucide="clock" class="w-4 h-4 inline"></i>
@@ -365,7 +365,7 @@
             generatedContent: null, // Record<LangCode, EmailContent>
             isCancelledRef: false,
             assetGenerationLoading: null, // Śledzi ładowanie zasobów
-            outputFormat: 'html', // 'html' | 'json' | 'csv' - DEFAULT: HTML
+            outputFormat: 'html', // 'html' | 'txt' - DEFAULT: HTML
             generatedHTML: {}, // Record<LangCode, string> - HTML emails
             estimatedTime: 0, // Estimated generation time in seconds
             startTime: null // Generation start timestamp
@@ -539,6 +539,13 @@ CONTENT RULES:
 - MSO comments for Outlook
 - Alt text on all images
 
+DATA ACCURACY (CRITICAL):
+- ALWAYS preserve exact numbers, dates, years, percentages from the source
+- If source says "2024", use "2024" - NEVER approximate or change years
+- If source says "37%", use "37%" - NEVER round or estimate
+- Copy statistics, figures, and dates EXACTLY as they appear in source
+- When in doubt, quote the exact number from the source material
+
 CRITICAL: Your entire response must be a single complete HTML email document.
 It must start with <!DOCTYPE html> and end with </html>.
 Do not add anything after the closing </html> tag.
@@ -569,6 +576,14 @@ WRITING STYLE RULES:
 - AVOID absolute/categorical statements like "It gives a clear picture", "This provides complete clarity", "It's the only solution"
 - Use nuanced language: "can help", "tends to", "often shows", "may improve", "suggests", "indicates"
 - Present data and trends, let the reader draw conclusions
+
+DATA ACCURACY (CRITICAL):
+- ALWAYS preserve exact numbers, dates, years, percentages from the source
+- If source says "2024", use "2024" - NEVER approximate or change years
+- If source says "37%", use "37%" - NEVER round or estimate
+- Copy statistics, figures, and dates EXACTLY as they appear in source
+- When in doubt, quote the exact number from the source material
+- Example: "In 2024, 37% of companies..." NOT "Recently, around 40% of companies..."
 
 Please create:
 1. A compelling, client-focused subject line (max 15 words). Use sentence case - only capitalize the first word and proper nouns. Be clear, confident, and focus on the reader benefit.
@@ -1555,28 +1570,35 @@ Timestamp: ${feedback.timestamp}
         function exportData(format) {
             if (!state.generatedContent) return;
 
-            if (format === 'json') {
-                const data = Object.entries(state.generatedContent).map(([lang, content]) => ({
-                    language_code: lang,
-                    language_name: LANGUAGES[lang].name,
-                    subject: content.subject,
-                    preheader: content.preheader,
-                    body: content.body,
-                    cta: content.cta,
-                    key_insights: content.keyInsights.join('; ')
-                }));
-                downloadBlob(new Blob([JSON.stringify(data, null, 2)], { type: "application/json;charset=utf-8" }), 'eloqua-content.json');
-            } else if (format === 'csv') {
-                // CSV format: język, tytuł (subject), opis (body), CTA
-                const data = Object.entries(state.generatedContent).map(([lang, content]) => ({
-                    language: LANGUAGES[lang].name,
-                    subject: content.subject,
-                    body: content.body,
-                    cta: content.cta
-                }));
-                const header = Object.keys(data[0]).join(',');
-                const rows = data.map(row => Object.values(row).map(val => `"${String(val).replace(/"/g, '""').replace(/\n/g, ' ')}"`).join(','));
-                downloadBlob(new Blob([`${header}\n${rows.join('\n')}`], { type: "text/csv;charset=utf-8" }), 'eloqua-content.csv');
+            if (format === 'txt') {
+                // TXT format: clean, readable text format
+                let txtContent = "ELOQUA CAMPAIGN GENERATOR - EXPORTED RESULTS\n";
+                txtContent += `Generated on: ${new Date().toLocaleString()}\n`;
+                txtContent += `Source: ${getSourceContent().substring(0, 100)}...\n`;
+                txtContent += `\n${'='.repeat(80)}\n\n`;
+
+                Object.entries(state.generatedContent).forEach(([lang, content]) => {
+                    const langInfo = LANGUAGES[lang];
+                    txtContent += `LANGUAGE: ${langInfo.name} (${lang}) ${langInfo.flag}\n`;
+                    txtContent += `${'-'.repeat(80)}\n\n`;
+                    txtContent += `SUBJECT:\n${content.subject}\n\n`;
+                    txtContent += `PREHEADER:\n${content.preheader}\n\n`;
+                    txtContent += `BODY:\n${content.body.replace(/\\n/g, '\n')}\n\n`;
+
+                    if (content.keyInsights && content.keyInsights.length > 0) {
+                        txtContent += `KEY INSIGHTS:\n`;
+                        content.keyInsights.forEach((insight, idx) => {
+                            txtContent += `${idx + 1}. ${insight}\n`;
+                        });
+                        txtContent += `\n`;
+                    }
+
+                    txtContent += `CALL TO ACTION:\n${content.cta}\n\n`;
+                    txtContent += `${'='.repeat(80)}\n\n`;
+                });
+
+                const timestamp = new Date().toISOString().split('T')[0];
+                downloadBlob(new Blob([txtContent], { type: "text/plain;charset=utf-8" }), `eloqua-content-${timestamp}.txt`);
             }
         }
 
@@ -1780,24 +1802,17 @@ Timestamp: ${feedback.timestamp}
                         <div class="flex flex-wrap gap-2">
                             <!-- Format Selector -->
                             <div class="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
-                                <button id="formatJSON" class="px-3 py-1.5 text-xs font-semibold rounded ${state.outputFormat === 'json' ? 'bg-white shadow' : 'text-gray-600'}" data-format="json">JSON</button>
                                 <button id="formatHTML" class="px-3 py-1.5 text-xs font-semibold rounded ${state.outputFormat === 'html' ? 'bg-white shadow' : 'text-gray-600'}" data-format="html">HTML</button>
-                                <button id="formatCSV" class="px-3 py-1.5 text-xs font-semibold rounded ${state.outputFormat === 'csv' ? 'bg-white shadow' : 'text-gray-600'}" data-format="csv">CSV</button>
+                                <button id="formatTXT" class="px-3 py-1.5 text-xs font-semibold rounded ${state.outputFormat === 'txt' ? 'bg-white shadow' : 'text-gray-600'}" data-format="txt">TXT</button>
                             </div>
                             <!-- Export Buttons -->
-                            <button id="emailResultsButton" ${!hasSuccess ? 'disabled' : ''} class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 text-sm disabled:bg-gray-300">
-                                <i data-lucide="mail" class="w-4 h-4"></i> Send by E-mail
-                            </button>
                             ${hasHTML ? `
                             <button id="exportHTML" class="px-4 py-2 bg-[#DC0028] text-white rounded-lg hover:bg-[#DC0028]/90 flex items-center gap-2 text-sm">
                                 <i data-lucide="code" class="w-4 h-4"></i> Export HTML
                             </button>
                             ` : ''}
-                            <button id="exportJson" ${!hasSuccess ? 'disabled' : ''} class="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 flex items-center gap-2 text-sm disabled:bg-gray-300">
-                                <i data-lucide="download" class="w-4 h-4"></i> Export JSON
-                            </button>
-                            <button id="exportCsv" ${!hasSuccess ? 'disabled' : ''} class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 text-sm disabled:bg-gray-300">
-                                <i data-lucide="download" class="w-4 h-4"></i> Export CSV
+                            <button id="exportTxt" ${!hasSuccess ? 'disabled' : ''} class="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 flex items-center gap-2 text-sm disabled:bg-gray-300">
+                                <i data-lucide="file-text" class="w-4 h-4"></i> Export TXT
                             </button>
                         </div>
                     </div>
@@ -1825,14 +1840,10 @@ Timestamp: ${feedback.timestamp}
             dom.resultsContainer.innerHTML = headerHTML;
 
             // Podpięcie listenerów eksportu
-            document.getElementById('exportJson').addEventListener('click', () => exportData('json'));
-            document.getElementById('exportCsv').addEventListener('click', () => exportData('csv'));
-            // ✨ NOWY LISTENER: Przycisk e-maila
-            document.getElementById('emailResultsButton').addEventListener('click', showEmailModal);
+            document.getElementById('exportTxt').addEventListener('click', () => exportData('txt'));
             // Format selectors
-            document.getElementById('formatJSON').addEventListener('click', () => switchOutputFormat('json'));
             document.getElementById('formatHTML').addEventListener('click', () => switchOutputFormat('html'));
-            document.getElementById('formatCSV').addEventListener('click', () => switchOutputFormat('csv'));
+            document.getElementById('formatTXT').addEventListener('click', () => switchOutputFormat('txt'));
             // Export HTML button (if exists)
             const exportHTMLBtn = document.getElementById('exportHTML');
             if (exportHTMLBtn) {
